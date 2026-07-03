@@ -73,6 +73,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "theme-color", content: "#1a0d08" },
+      { name: "twitter:title", content: "CoinFlames — Earn Flames on Telegram" },
+      { name: "description", content: "Flames Rewards Hub is a Telegram Mini App for earning rewards through tasks, ads, and referrals." },
+      { property: "og:description", content: "Flames Rewards Hub is a Telegram Mini App for earning rewards through tasks, ads, and referrals." },
+      { name: "twitter:description", content: "Flames Rewards Hub is a Telegram Mini App for earning rewards through tasks, ads, and referrals." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c12f696f-2fed-4e89-a070-fbb4480b3f74/id-preview-e7a4da45--2291c52f-fef9-4847-9d1e-2ade542b1d1d.lovable.app-1783100159949.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c12f696f-2fed-4e89-a070-fbb4480b3f74/id-preview-e7a4da45--2291c52f-fef9-4847-9d1e-2ade542b1d1d.lovable.app-1783100159949.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
