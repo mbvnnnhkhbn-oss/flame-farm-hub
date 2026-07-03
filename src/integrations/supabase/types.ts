@@ -14,16 +14,400 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      ads_history: {
+        Row: {
+          id: string
+          provider: string | null
+          reward: number
+          user_id: string
+          watched_at: string
+        }
+        Insert: {
+          id?: string
+          provider?: string | null
+          reward: number
+          user_id: string
+          watched_at?: string
+        }
+        Update: {
+          id?: string
+          provider?: string | null
+          reward?: number
+          user_id?: string
+          watched_at?: string
+        }
+        Relationships: []
+      }
+      announcements: {
+        Row: {
+          active: boolean
+          body: string
+          created_at: string
+          id: string
+          pinned: boolean
+          title: string
+        }
+        Insert: {
+          active?: boolean
+          body: string
+          created_at?: string
+          id?: string
+          pinned?: boolean
+          title: string
+        }
+        Update: {
+          active?: boolean
+          body?: string
+          created_at?: string
+          id?: string
+          pinned?: boolean
+          title?: string
+        }
+        Relationships: []
+      }
+      daily_checkins: {
+        Row: {
+          claimed_date: string
+          created_at: string
+          id: string
+          reward: number
+          streak_day: number
+          user_id: string
+        }
+        Insert: {
+          claimed_date?: string
+          created_at?: string
+          id?: string
+          reward: number
+          streak_day: number
+          user_id: string
+        }
+        Update: {
+          claimed_date?: string
+          created_at?: string
+          id?: string
+          reward?: number
+          streak_day?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          read: boolean
+          title: string
+          user_id: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          title: string
+          user_id?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          title?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          balance: number
+          banned: boolean
+          created_at: string
+          first_name: string | null
+          id: string
+          is_premium: boolean | null
+          language_code: string | null
+          last_checkin_date: string | null
+          last_name: string | null
+          photo_url: string | null
+          referred_by: string | null
+          streak_day: number
+          telegram_id: number
+          today_date: string | null
+          today_earned: number
+          total_earned: number
+          updated_at: string
+          username: string | null
+          wallet_address: string | null
+        }
+        Insert: {
+          balance?: number
+          banned?: boolean
+          created_at?: string
+          first_name?: string | null
+          id: string
+          is_premium?: boolean | null
+          language_code?: string | null
+          last_checkin_date?: string | null
+          last_name?: string | null
+          photo_url?: string | null
+          referred_by?: string | null
+          streak_day?: number
+          telegram_id: number
+          today_date?: string | null
+          today_earned?: number
+          total_earned?: number
+          updated_at?: string
+          username?: string | null
+          wallet_address?: string | null
+        }
+        Update: {
+          balance?: number
+          banned?: boolean
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          is_premium?: boolean | null
+          language_code?: string | null
+          last_checkin_date?: string | null
+          last_name?: string | null
+          photo_url?: string | null
+          referred_by?: string | null
+          streak_day?: number
+          telegram_id?: number
+          today_date?: string | null
+          today_earned?: number
+          total_earned?: number
+          updated_at?: string
+          username?: string | null
+          wallet_address?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_referred_by_fkey"
+            columns: ["referred_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrals: {
+        Row: {
+          bonus_amount: number
+          bonus_paid: boolean
+          created_at: string
+          id: string
+          referred_id: string
+          referrer_id: string
+        }
+        Insert: {
+          bonus_amount?: number
+          bonus_paid?: boolean
+          created_at?: string
+          id?: string
+          referred_id: string
+          referrer_id: string
+        }
+        Update: {
+          bonus_amount?: number
+          bonus_paid?: boolean
+          created_at?: string
+          id?: string
+          referred_id?: string
+          referrer_id?: string
+        }
+        Relationships: []
+      }
+      settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      task_completions: {
+        Row: {
+          created_at: string
+          id: string
+          reward: number
+          status: Database["public"]["Enums"]["task_status"]
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reward?: number
+          status?: Database["public"]["Enums"]["task_status"]
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reward?: number
+          status?: Database["public"]["Enums"]["task_status"]
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_completions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          expires_at: string | null
+          id: string
+          priority: number | null
+          reward: number
+          target_chat: string | null
+          target_url: string | null
+          title: string
+          type: Database["public"]["Enums"]["task_type"]
+          updated_at: string
+          verification_type: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          priority?: number | null
+          reward: number
+          target_chat?: string | null
+          target_url?: string | null
+          title: string
+          type: Database["public"]["Enums"]["task_type"]
+          updated_at?: string
+          verification_type?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          priority?: number | null
+          reward?: number
+          target_chat?: string | null
+          target_url?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["task_type"]
+          updated_at?: string
+          verification_type?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      withdrawals: {
+        Row: {
+          admin_note: string | null
+          amount_flames: number
+          amount_usdt: number
+          created_at: string
+          id: string
+          network: string
+          status: Database["public"]["Enums"]["withdraw_status"]
+          tx_hash: string | null
+          updated_at: string
+          user_id: string
+          wallet_address: string
+        }
+        Insert: {
+          admin_note?: string | null
+          amount_flames: number
+          amount_usdt: number
+          created_at?: string
+          id?: string
+          network?: string
+          status?: Database["public"]["Enums"]["withdraw_status"]
+          tx_hash?: string | null
+          updated_at?: string
+          user_id: string
+          wallet_address: string
+        }
+        Update: {
+          admin_note?: string | null
+          amount_flames?: number
+          amount_usdt?: number
+          created_at?: string
+          id?: string
+          network?: string
+          status?: Database["public"]["Enums"]["withdraw_status"]
+          tx_hash?: string | null
+          updated_at?: string
+          user_id?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
+      task_status: "pending" | "approved" | "rejected"
+      task_type:
+        | "telegram_join"
+        | "telegram_group"
+        | "bot_start"
+        | "website"
+        | "social_follow"
+        | "youtube"
+        | "quiz"
+        | "survey"
+        | "app_download"
+      withdraw_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +534,21 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+      task_status: ["pending", "approved", "rejected"],
+      task_type: [
+        "telegram_join",
+        "telegram_group",
+        "bot_start",
+        "website",
+        "social_follow",
+        "youtube",
+        "quiz",
+        "survey",
+        "app_download",
+      ],
+      withdraw_status: ["pending", "approved", "rejected"],
+    },
   },
 } as const
