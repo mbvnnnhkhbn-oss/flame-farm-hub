@@ -201,3 +201,86 @@ function NotAdmin({ onClaim }: { onClaim: () => void }) {
     </div>
   );
 }
+
+function BrowserLogin({
+  onSubmit,
+  busy,
+  error,
+}: {
+  onSubmit: (tgId: number, name?: string, username?: string) => void;
+  busy: boolean;
+  error: string | null;
+}) {
+  const [tgId, setTgId] = useState("");
+  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+  const [remember, setRemember] = useState(true);
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const id = Number(tgId.trim());
+    if (!id || Number.isNaN(id)) return;
+    if (remember) localStorage.setItem(DEV_TG_KEY, String(id));
+    else localStorage.removeItem(DEV_TG_KEY);
+    onSubmit(id, name.trim() || undefined, username.trim() || undefined);
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center px-6">
+      <form
+        onSubmit={submit}
+        className="w-full max-w-sm space-y-4 rounded-3xl border border-border/60 bg-card/50 p-6 backdrop-blur-xl"
+      >
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-flame shadow-flame">
+            <Flame className="h-7 w-7 text-primary-foreground" />
+          </div>
+          <div>
+            <div className="text-lg font-black">Admin sign-in</div>
+            <div className="text-[11px] text-muted-foreground">
+              Sign in with your Telegram ID to manage CoinFlames from the browser.
+            </div>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <label className="block text-xs font-semibold text-muted-foreground">Telegram ID *</label>
+          <input
+            value={tgId}
+            onChange={(e) => setTgId(e.target.value)}
+            inputMode="numeric"
+            placeholder="e.g. 123456789"
+            required
+            className="w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm"
+          />
+          <label className="block text-xs font-semibold text-muted-foreground">First name (optional)</label>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm"
+          />
+          <label className="block text-xs font-semibold text-muted-foreground">Username (optional)</label>
+          <input
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm"
+          />
+        </div>
+        <label className="flex items-center gap-2 text-xs text-muted-foreground">
+          <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+          Remember on this browser
+        </label>
+        {error && <div className="text-xs text-destructive">{error}</div>}
+        <button
+          type="submit"
+          disabled={busy || !tgId}
+          className="w-full rounded-full bg-gradient-flame px-6 py-2.5 text-sm font-bold text-primary-foreground shadow-flame disabled:opacity-50"
+        >
+          {busy ? "Signing in…" : "Sign in"}
+        </button>
+        <p className="text-center text-[10px] text-muted-foreground">
+          Find your Telegram ID by messaging @userinfobot on Telegram.
+        </p>
+      </form>
+    </div>
+  );
+}
