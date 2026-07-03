@@ -10,8 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/app'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AppWithdrawRouteImport } from './routes/app.withdraw'
 import { Route as AppTasksRouteImport } from './routes/app.tasks'
 import { Route as AppReferralRouteImport } from './routes/app.referral'
@@ -19,10 +21,20 @@ import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppLeaderboardRouteImport } from './routes/app.leaderboard'
 import { Route as AppHistoryRouteImport } from './routes/app.history'
 import { Route as AppEarnRouteImport } from './routes/app.earn'
+import { Route as AdminWithdrawalsRouteImport } from './routes/admin.withdrawals'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AdminTasksRouteImport } from './routes/admin.tasks'
+import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
 
 const AppRoute = AppRouteImport.update({
   id: '/app',
   path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -34,6 +46,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRoute,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AppWithdrawRoute = AppWithdrawRouteImport.update({
   id: '/withdraw',
@@ -70,10 +87,41 @@ const AppEarnRoute = AppEarnRouteImport.update({
   path: '/earn',
   getParentRoute: () => AppRoute,
 } as any)
+const AdminWithdrawalsRoute = AdminWithdrawalsRouteImport.update({
+  id: '/withdrawals',
+  path: '/withdrawals',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminTasksRoute = AdminTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAnnouncementsRoute = AdminAnnouncementsRouteImport.update({
+  id: '/announcements',
+  path: '/announcements',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
+  '/admin/announcements': typeof AdminAnnouncementsRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/tasks': typeof AdminTasksRoute
+  '/admin/users': typeof AdminUsersRoute
+  '/admin/withdrawals': typeof AdminWithdrawalsRoute
   '/app/earn': typeof AppEarnRoute
   '/app/history': typeof AppHistoryRoute
   '/app/leaderboard': typeof AppLeaderboardRoute
@@ -81,10 +129,16 @@ export interface FileRoutesByFullPath {
   '/app/referral': typeof AppReferralRoute
   '/app/tasks': typeof AppTasksRoute
   '/app/withdraw': typeof AppWithdrawRoute
+  '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin/announcements': typeof AdminAnnouncementsRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/tasks': typeof AdminTasksRoute
+  '/admin/users': typeof AdminUsersRoute
+  '/admin/withdrawals': typeof AdminWithdrawalsRoute
   '/app/earn': typeof AppEarnRoute
   '/app/history': typeof AppHistoryRoute
   '/app/leaderboard': typeof AppLeaderboardRoute
@@ -92,12 +146,19 @@ export interface FileRoutesByTo {
   '/app/referral': typeof AppReferralRoute
   '/app/tasks': typeof AppTasksRoute
   '/app/withdraw': typeof AppWithdrawRoute
+  '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
+  '/admin/announcements': typeof AdminAnnouncementsRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/tasks': typeof AdminTasksRoute
+  '/admin/users': typeof AdminUsersRoute
+  '/admin/withdrawals': typeof AdminWithdrawalsRoute
   '/app/earn': typeof AppEarnRoute
   '/app/history': typeof AppHistoryRoute
   '/app/leaderboard': typeof AppLeaderboardRoute
@@ -105,13 +166,20 @@ export interface FileRoutesById {
   '/app/referral': typeof AppReferralRoute
   '/app/tasks': typeof AppTasksRoute
   '/app/withdraw': typeof AppWithdrawRoute
+  '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/app'
+    | '/admin/announcements'
+    | '/admin/settings'
+    | '/admin/tasks'
+    | '/admin/users'
+    | '/admin/withdrawals'
     | '/app/earn'
     | '/app/history'
     | '/app/leaderboard'
@@ -119,10 +187,16 @@ export interface FileRouteTypes {
     | '/app/referral'
     | '/app/tasks'
     | '/app/withdraw'
+    | '/admin/'
     | '/app/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin/announcements'
+    | '/admin/settings'
+    | '/admin/tasks'
+    | '/admin/users'
+    | '/admin/withdrawals'
     | '/app/earn'
     | '/app/history'
     | '/app/leaderboard'
@@ -130,11 +204,18 @@ export interface FileRouteTypes {
     | '/app/referral'
     | '/app/tasks'
     | '/app/withdraw'
+    | '/admin'
     | '/app'
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/app'
+    | '/admin/announcements'
+    | '/admin/settings'
+    | '/admin/tasks'
+    | '/admin/users'
+    | '/admin/withdrawals'
     | '/app/earn'
     | '/app/history'
     | '/app/leaderboard'
@@ -142,11 +223,13 @@ export interface FileRouteTypes {
     | '/app/referral'
     | '/app/tasks'
     | '/app/withdraw'
+    | '/admin/'
     | '/app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
 }
 
@@ -157,6 +240,13 @@ declare module '@tanstack/react-router' {
       path: '/app'
       fullPath: '/app'
       preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -172,6 +262,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/app/withdraw': {
       id: '/app/withdraw'
@@ -222,8 +319,63 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppEarnRouteImport
       parentRoute: typeof AppRoute
     }
+    '/admin/withdrawals': {
+      id: '/admin/withdrawals'
+      path: '/withdrawals'
+      fullPath: '/admin/withdrawals'
+      preLoaderRoute: typeof AdminWithdrawalsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/tasks': {
+      id: '/admin/tasks'
+      path: '/tasks'
+      fullPath: '/admin/tasks'
+      preLoaderRoute: typeof AdminTasksRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/announcements': {
+      id: '/admin/announcements'
+      path: '/announcements'
+      fullPath: '/admin/announcements'
+      preLoaderRoute: typeof AdminAnnouncementsRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
+
+interface AdminRouteChildren {
+  AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
+  AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminTasksRoute: typeof AdminTasksRoute
+  AdminUsersRoute: typeof AdminUsersRoute
+  AdminWithdrawalsRoute: typeof AdminWithdrawalsRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminAnnouncementsRoute: AdminAnnouncementsRoute,
+  AdminSettingsRoute: AdminSettingsRoute,
+  AdminTasksRoute: AdminTasksRoute,
+  AdminUsersRoute: AdminUsersRoute,
+  AdminWithdrawalsRoute: AdminWithdrawalsRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface AppRouteChildren {
   AppEarnRoute: typeof AppEarnRoute
@@ -251,6 +403,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
 }
 export const routeTree = rootRouteImport
