@@ -38,11 +38,30 @@ function EarnPage() {
   const reward = cfg?.reward_per_ad ?? 500;
   const progress = Math.min(100, (watched / limit) * 100);
 
+  const blockId = (cfg as { block_id?: string } | undefined)?.block_id ?? "";
+
   async function handleWatchAd() {
-    // Phase 2: real AdsGram SDK. For now simulate a short watch.
-    toast.loading("Loading ad…", { id: "ad" });
-    await new Promise((r) => setTimeout(r, 1200));
-    toast.dismiss("ad");
+    if (blockId) {
+      try {
+        const { showAd } = await import("@/lib/adsgram");
+        toast.loading("Loading ad…", { id: "ad" });
+        const result = await showAd(blockId);
+        toast.dismiss("ad");
+        if (!result.done || result.error) {
+          toast.error("Ad not completed");
+          return;
+        }
+      } catch (e) {
+        toast.dismiss("ad");
+        toast.error(e instanceof Error ? e.message : "Ad failed to load");
+        return;
+      }
+    } else {
+      // No AdsGram configured yet — dev simulation
+      toast.loading("Loading ad…", { id: "ad" });
+      await new Promise((r) => setTimeout(r, 1200));
+      toast.dismiss("ad");
+    }
     claimMut.mutate();
   }
 
