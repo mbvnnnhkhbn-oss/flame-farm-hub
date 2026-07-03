@@ -25,14 +25,49 @@ const NAV = [
   { to: "/admin/settings", label: "Settings", icon: Settings2 },
 ];
 
+const DEV_TG_KEY = "coinflames_admin_dev_tg_id";
+
 function AdminLayout() {
   const [authReady, setAuthReady] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [needsBrowserLogin, setNeedsBrowserLogin] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
   const userId = useCurrentUserId();
   const qc = useQueryClient();
   const loc = useLocation();
 
   const bootstrapFn = useServerFn(claimBootstrapAdmin);
+
+  async function signInAs(tgId: number, name?: string, username?: string) {
+    setSigningIn(true);
+    setAuthError(null);
+    try {
+      const { initData, user, startParam } = getInitData();
+      const devUser = user
+        ? {
+            id: user.id,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            username: user.username,
+            photo_url: user.photo_url,
+          }
+        : { id: tgId, first_name: name || "Admin", username: username || `admin_${tgId}` };
+      const creds = await telegramSignIn({
+        data: { initData, devUser, startParam },
+      });
+      const { error } = await supabase.auth.signInWithPassword({
+        email: creds.email,
+        password: creds.password,
+      });
+      if (error) throw error;
+      setAuthReady(true);
+      setNeedsBrowserLogin(false);
+    } catch (e) {
+      setAuthError(e instanceof Error ? e.message : "Sign-in failed");
+    } finally {
+      setSigningIn(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -42,41 +77,24 @@ function AdminLayout() {
         if (!cancelled) setAuthReady(true);
         return;
       }
-      const { initData, user, startParam } = getInitData();
-      if (!initData && !user) {
-        if (!cancelled) setAuthError("Please open this admin panel from Telegram or append ?tg_id=... in dev.");
+      const { initData, user } = getInitData();
+      if (initData || user) {
+        await signInAs(user?.id ?? 0, user?.first_name, user?.username);
         return;
       }
-      try {
-        const creds = await telegramSignIn({
-          data: {
-            initData,
-            devUser: user
-              ? {
-                  id: user.id,
-                  first_name: user.first_name,
-                  last_name: user.last_name,
-                  username: user.username,
-                  photo_url: user.photo_url,
-                }
-              : undefined,
-            startParam,
-          },
-        });
-        const { error } = await supabase.auth.signInWithPassword({
-          email: creds.email,
-          password: creds.password,
-        });
-        if (error) throw error;
-        if (!cancelled) setAuthReady(true);
-      } catch (e) {
-        if (!cancelled) setAuthError(e instanceof Error ? e.message : "Sign-in failed");
+      // Browser fallback: check saved dev tg_id
+      const saved = typeof window !== "undefined" ? localStorage.getItem(DEV_TG_KEY) : null;
+      if (saved && /^\d+$/.test(saved)) {
+        await signInAs(Number(saved));
+        return;
       }
+      if (!cancelled) setNeedsBrowserLogin(true);
     }
     run();
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const isAdmin = useQuery({
