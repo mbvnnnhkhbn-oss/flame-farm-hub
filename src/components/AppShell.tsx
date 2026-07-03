@@ -25,7 +25,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             return (
               <Link
                 key={t.to}
-                to={t.to}
+                to={t.to as never}
                 className="flex flex-col items-center gap-1 py-3 text-xs transition-colors"
               >
                 <span
