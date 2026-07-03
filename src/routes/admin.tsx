@@ -113,7 +113,8 @@ function AdminLayout() {
     }
   }
 
-  if (!authReady) return <SplashState label="Signing in…" />;
+  if (needsBrowserLogin) return <BrowserLogin onSubmit={signInAs} busy={signingIn} error={authError} />;
+  if (!authReady) return <SplashState label={signingIn ? "Signing in…" : "Loading…"} />;
   if (authError) return <SplashState label="Auth failed" sub={authError} bad />;
   if (isAdmin.isLoading) return <SplashState label="Checking access…" />;
   if (!isAdmin.data) return <NotAdmin onClaim={tryBootstrap} />;
