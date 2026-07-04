@@ -26,15 +26,46 @@ function HomePage() {
 
   const checkinFn = useServerFn(claimDailyCheckin);
   const checkinMut = useMutation({
-    mutationFn: () => checkinFn(),
+    mutationFn: async () => {
+      const res = await checkinFn();
+      // After claim, show a random ad from configured blocks (best-effort, non-blocking reward).
+      const ads = settings.data?.ads;
+      const rewardBlock = ads?.block_id_reward;
+      const intBlock = ads?.block_id_interstitial;
+      try {
+        const { pickRandomBlockId, showAd } = await import("@/lib/adsgram");
+        const blockId = pickRandomBlockId(rewardBlock, intBlock);
+        if (blockId) await showAd(blockId).catch(() => undefined);
+      } catch {
+        /* ignore ad errors after checkin */
+      }
+      return res;
+    },
     onSuccess: (res) => {
       haptic("medium");
-      toast.success(`+${formatFlames(res.reward)} Flames — Day ${res.streak_day} streak!`);
+      toast.success(`+${formatFlames(res.reward)} coins — Day ${res.streak_day} streak!`);
       qc.invalidateQueries({ queryKey: ["profile", userId] });
       qc.invalidateQueries({ queryKey: ["checkins", userId] });
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
+
+  // Random 2–5 coins reward on every app open (server-side cooldown enforced).
+  const openBonusFn = useServerFn(claimOpenBonus);
+  const openBonusRan = useRef(false);
+  useEffect(() => {
+    if (!userId || openBonusRan.current) return;
+    openBonusRan.current = true;
+    openBonusFn()
+      .then((res) => {
+        if (res.reward > 0) {
+          haptic("light");
+          toast.success(`🔥 Welcome back — +${res.reward} coins!`);
+          qc.invalidateQueries({ queryKey: ["profile", userId] });
+        }
+      })
+      .catch(() => undefined);
+  }, [userId, openBonusFn, qc]);
 
   const rate = settings.data?.economy.flames_per_usdt ?? 100000;
   const canCheckIn =
