@@ -129,10 +129,15 @@ export type Database = {
           is_premium: boolean | null
           language_code: string | null
           last_checkin_date: string | null
+          last_ip: string | null
           last_name: string | null
+          last_open_bonus_at: string | null
           photo_url: string | null
           referred_by: string | null
+          signup_ip: string | null
           streak_day: number
+          suspend_reason: string | null
+          suspended: boolean
           telegram_id: number
           today_date: string | null
           today_earned: number
@@ -150,10 +155,15 @@ export type Database = {
           is_premium?: boolean | null
           language_code?: string | null
           last_checkin_date?: string | null
+          last_ip?: string | null
           last_name?: string | null
+          last_open_bonus_at?: string | null
           photo_url?: string | null
           referred_by?: string | null
+          signup_ip?: string | null
           streak_day?: number
+          suspend_reason?: string | null
+          suspended?: boolean
           telegram_id: number
           today_date?: string | null
           today_earned?: number
@@ -171,10 +181,15 @@ export type Database = {
           is_premium?: boolean | null
           language_code?: string | null
           last_checkin_date?: string | null
+          last_ip?: string | null
           last_name?: string | null
+          last_open_bonus_at?: string | null
           photo_url?: string | null
           referred_by?: string | null
+          signup_ip?: string | null
           streak_day?: number
+          suspend_reason?: string | null
+          suspended?: boolean
           telegram_id?: number
           today_date?: string | null
           today_earned?: number
