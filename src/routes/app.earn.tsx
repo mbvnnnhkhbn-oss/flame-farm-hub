@@ -22,10 +22,10 @@ function EarnPage() {
 
   const claimFn = useServerFn(claimAdReward);
   const claimMut = useMutation({
-    mutationFn: () => claimFn(),
+    mutationFn: (blockId: string | null) => claimFn({ data: { blockId: blockId ?? undefined } }),
     onSuccess: (res) => {
       haptic("heavy");
-      toast.success(`+${formatFlames(res.reward)} Flames — thanks for watching!`);
+      toast.success(`+${formatFlames(res.reward)} coins — thanks for watching!`);
       qc.invalidateQueries({ queryKey: ["ads_today", userId] });
       qc.invalidateQueries({ queryKey: ["profile", userId] });
     },
@@ -34,16 +34,18 @@ function EarnPage() {
 
   const cfg = settings.data?.ads;
   const watched = adsToday.data?.length ?? 0;
-  const limit = cfg?.daily_limit ?? 30;
-  const reward = cfg?.reward_per_ad ?? 500;
+  const limit = cfg?.daily_limit ?? 10;
+  const reward = cfg?.reward_per_ad ?? 10;
   const progress = Math.min(100, (watched / limit) * 100);
 
-  const blockId = (cfg as { block_id?: string } | undefined)?.block_id ?? "";
+  const rewardBlockId = cfg?.block_id_reward ?? "";
+  const interstitialBlockId = cfg?.block_id_interstitial ?? "";
 
   async function handleWatchAd() {
+    const { pickRandomBlockId, showAd } = await import("@/lib/adsgram");
+    const blockId = pickRandomBlockId(rewardBlockId, interstitialBlockId);
     if (blockId) {
       try {
-        const { showAd } = await import("@/lib/adsgram");
         toast.loading("Loading ad…", { id: "ad" });
         const result = await showAd(blockId);
         toast.dismiss("ad");
@@ -62,7 +64,7 @@ function EarnPage() {
       await new Promise((r) => setTimeout(r, 1200));
       toast.dismiss("ad");
     }
-    claimMut.mutate();
+    claimMut.mutate(blockId);
   }
 
   return (
