@@ -1,4 +1,4 @@
-import { createServerFn } from "@tanstack/react-start";
+import { createServerFn, getRequest } from "@tanstack/react-start";
 import { z } from "zod";
 
 const inputSchema = z.object({
@@ -16,6 +16,17 @@ const inputSchema = z.object({
   startParam: z.string().optional(),
 });
 
+function extractIp(headers: Headers): string | null {
+  const xff = headers.get("x-forwarded-for");
+  if (xff) return xff.split(",")[0].trim();
+  return (
+    headers.get("cf-connecting-ip") ||
+    headers.get("x-real-ip") ||
+    headers.get("fly-client-ip") ||
+    null
+  );
+}
+
 /**
  * Verifies Telegram initData, creates the auth user + profile if needed,
  * and returns deterministic credentials the client uses to sign in.
@@ -25,24 +36,40 @@ export const telegramSignIn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { verifyInitData, deriveCredentials } = await import("./telegram-auth.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { notifyAdmin } = await import("./telegram-bot.server");
 
     const result = verifyInitData(data.initData, data.devUser);
     const tgUser = result.user;
     const startParam = data.startParam ?? result.startParam;
 
+    const req = getRequest();
+    const ip = req ? extractIp(req.headers) : null;
+
     const { email, password } = deriveCredentials(tgUser.id);
 
-    // Look up existing profile by telegram_id
     const { data: existingProfile } = await supabaseAdmin
       .from("profiles")
-      .select("id")
+      .select("id,suspended")
       .eq("telegram_id", tgUser.id)
       .maybeSingle();
 
     let userId = existingProfile?.id as string | undefined;
+    let newlyCreated = false;
+    let autoSuspended = false;
 
     if (!userId) {
-      // Create auth user
+      // Check IP for duplicates (one account per IP)
+      let ipDuplicate = false;
+      if (ip) {
+        const { data: sameIp } = await supabaseAdmin
+          .from("profiles")
+          .select("id")
+          .eq("signup_ip", ip)
+          .limit(1)
+          .maybeSingle();
+        ipDuplicate = !!sameIp;
+      }
+
       const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
@@ -57,8 +84,9 @@ export const telegramSignIn = createServerFn({ method: "POST" })
         throw new Error(`Failed to create user: ${createErr?.message ?? "unknown"}`);
       }
       userId = created.user.id;
+      newlyCreated = true;
+      autoSuspended = ipDuplicate;
 
-      // Resolve referrer from start_param (referrer telegram_id)
       let referrerProfileId: string | null = null;
       if (startParam) {
         const referrerTgId = Number(startParam);
@@ -72,7 +100,6 @@ export const telegramSignIn = createServerFn({ method: "POST" })
         }
       }
 
-      // Insert profile
       const { error: profileErr } = await supabaseAdmin.from("profiles").insert({
         id: userId,
         telegram_id: tgUser.id,
@@ -82,29 +109,44 @@ export const telegramSignIn = createServerFn({ method: "POST" })
         photo_url: tgUser.photo_url ?? null,
         language_code: tgUser.language_code ?? null,
         is_premium: tgUser.is_premium ?? false,
-        referred_by: referrerProfileId,
+        referred_by: ipDuplicate ? null : referrerProfileId,
+        signup_ip: ip,
+        last_ip: ip,
+        suspended: ipDuplicate,
+        suspend_reason: ipDuplicate ? "Duplicate account from same IP" : null,
       });
       if (profileErr) {
         throw new Error(`Failed to create profile: ${profileErr.message}`);
       }
 
-      // Insert referral row + pending bonus (paid on first task completion)
-      if (referrerProfileId) {
+      // Referral row only if not auto-suspended
+      if (referrerProfileId && !ipDuplicate) {
         const { data: refSettings } = await supabaseAdmin
           .from("settings")
           .select("value")
           .eq("key", "referral")
           .maybeSingle();
         const bonus =
-          (refSettings?.value as { invite_bonus?: number } | null)?.invite_bonus ?? 1000;
+          (refSettings?.value as { invite_bonus?: number } | null)?.invite_bonus ?? 150;
         await supabaseAdmin.from("referrals").insert({
           referrer_id: referrerProfileId,
           referred_id: userId,
           bonus_amount: bonus,
         });
       }
+
+      // Admin notifications
+      const name = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(" ") || "—";
+      const uname = tgUser.username ? `@${tgUser.username}` : "(no username)";
+      await notifyAdmin(
+        `🆕 <b>New user joined</b>\nName: ${name}\nUser: ${uname}\nTG ID: <code>${tgUser.id}</code>\nIP: <code>${ip ?? "unknown"}</code>`,
+      );
+      if (ipDuplicate) {
+        await notifyAdmin(
+          `⛔ <b>Account auto-suspended</b>\nReason: duplicate IP\nTG ID: <code>${tgUser.id}</code>\nIP: <code>${ip ?? "unknown"}</code>`,
+        );
+      }
     } else {
-      // Refresh a few profile fields
       await supabaseAdmin
         .from("profiles")
         .update({
@@ -114,9 +156,10 @@ export const telegramSignIn = createServerFn({ method: "POST" })
           photo_url: tgUser.photo_url ?? null,
           language_code: tgUser.language_code ?? null,
           is_premium: tgUser.is_premium ?? false,
+          last_ip: ip,
         })
         .eq("id", userId);
     }
 
-    return { email, password, verified: result.verified };
+    return { email, password, verified: result.verified, newlyCreated, autoSuspended };
   });
