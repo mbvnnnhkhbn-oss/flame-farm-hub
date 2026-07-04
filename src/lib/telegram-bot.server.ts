@@ -28,3 +28,23 @@ export async function sendTelegramMessage(
     console.error("[telegram-bot] sendMessage error", e);
   }
 }
+
+// Look up the admin chat id from settings and send a Telegram message to that admin.
+export async function notifyAdmin(text: string): Promise<void> {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin
+      .from("settings")
+      .select("value")
+      .eq("key", "app")
+      .maybeSingle();
+    const chatId = (data?.value as { admin_chat_id?: string | number } | null)?.admin_chat_id;
+    if (!chatId) {
+      console.warn("[telegram-bot] no admin_chat_id set");
+      return;
+    }
+    await sendTelegramMessage(chatId, text);
+  } catch (e) {
+    console.error("[telegram-bot] notifyAdmin error", e);
+  }
+}

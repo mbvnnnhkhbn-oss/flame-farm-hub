@@ -21,10 +21,19 @@ export const settingsQuery = () =>
       for (const row of data ?? []) map[row.key] = row.value;
       return map as {
         economy: { flames_per_usdt: number; min_withdraw_usdt: number; max_withdraw_usdt: number };
-        ads: { reward_per_ad: number; daily_limit: number; cooldown_seconds: number };
+        ads: {
+          reward_per_ad: number;
+          daily_limit: number;
+          cooldown_seconds: number;
+          block_id_reward?: string;
+          block_id_interstitial?: string;
+          watch_seconds_reward?: number;
+          watch_seconds_interstitial?: number;
+        };
         daily_rewards: Record<string, number>;
         referral: { invite_bonus: number; commission_pct: number };
-        app: { bot_username: string; support_url: string };
+        app: { bot_username: string; start_app_name?: string; support_url: string; admin_chat_id?: string };
+        open_bonus?: { min: number; max: number; cooldown_hours: number };
       };
     },
   });

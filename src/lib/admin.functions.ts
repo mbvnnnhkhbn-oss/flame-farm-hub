@@ -300,9 +300,22 @@ export const setUserBan = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("profiles")
-      .update({ banned: data.banned })
+      .update({ banned: data.banned, suspended: data.banned })
       .eq("id", data.userId);
     if (error) throw new Error(error.message);
+
+    if (data.banned) {
+      const { notifyAdmin } = await import("@/lib/telegram-bot.server");
+      const { data: prof } = await supabaseAdmin
+        .from("profiles")
+        .select("telegram_id,username,first_name")
+        .eq("id", data.userId)
+        .maybeSingle();
+      const uname = prof?.username ? `@${prof.username}` : prof?.first_name ?? "user";
+      await notifyAdmin(
+        `⛔ <b>Account suspended</b>\nUser: ${uname} (TG <code>${prof?.telegram_id ?? "?"}</code>)`,
+      );
+    }
     return { ok: true };
   });
 

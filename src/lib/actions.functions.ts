@@ -79,16 +79,21 @@ export const claimDailyCheckin = createServerFn({ method: "POST" })
 
 export const claimAdReward = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((data: unknown) =>
+    z.object({ blockId: z.string().optional() }).optional().parse(data ?? {}),
+  )
+  .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const userId = context.userId;
 
-    const cfg = await getSetting<{ reward_per_ad: number; daily_limit: number; cooldown_seconds: number }>(
-      "ads",
-      { reward_per_ad: 500, daily_limit: 30, cooldown_seconds: 30 },
-    );
+    const cfg = await getSetting<{
+      reward_per_ad: number;
+      daily_limit: number;
+      cooldown_seconds: number;
+      block_id_reward?: string;
+      block_id_interstitial?: string;
+    }>("ads", { reward_per_ad: 10, daily_limit: 10, cooldown_seconds: 10 });
 
-    // Cooldown check
     const { data: last } = await supabaseAdmin
       .from("ads_history")
       .select("watched_at")
@@ -103,7 +108,6 @@ export const claimAdReward = createServerFn({ method: "POST" })
       }
     }
 
-    // Daily limit check
     const startOfDay = new Date();
     startOfDay.setUTCHours(0, 0, 0, 0);
     const { count } = await supabaseAdmin
@@ -115,9 +119,48 @@ export const claimAdReward = createServerFn({ method: "POST" })
       throw new Error("Daily ad limit reached. Come back tomorrow!");
     }
 
-    await supabaseAdmin.from("ads_history").insert({ user_id: userId, reward: cfg.reward_per_ad });
+    await supabaseAdmin
+      .from("ads_history")
+      .insert({ user_id: userId, reward: cfg.reward_per_ad });
     await addBalance(userId, cfg.reward_per_ad);
-    return { reward: cfg.reward_per_ad };
+    return { reward: cfg.reward_per_ad, blockId: data?.blockId ?? null };
+  });
+
+export const claimOpenBonus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const userId = context.userId;
+
+    const cfg = await getSetting<{ min: number; max: number; cooldown_hours: number }>(
+      "open_bonus",
+      { min: 2, max: 5, cooldown_hours: 6 },
+    );
+
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("last_open_bonus_at,suspended")
+      .eq("id", userId)
+      .single();
+    if (!profile) throw new Error("Profile not found");
+    if (profile.suspended) return { reward: 0, skipped: true, reason: "suspended" as const };
+    if (profile.last_open_bonus_at) {
+      const elapsedMs = Date.now() - new Date(profile.last_open_bonus_at).getTime();
+      if (elapsedMs < cfg.cooldown_hours * 3600 * 1000) {
+        return { reward: 0, skipped: true, reason: "cooldown" as const };
+      }
+    }
+
+    const min = Math.max(0, Math.floor(cfg.min));
+    const max = Math.max(min, Math.floor(cfg.max));
+    const reward = min + Math.floor(Math.random() * (max - min + 1));
+
+    await supabaseAdmin
+      .from("profiles")
+      .update({ last_open_bonus_at: new Date().toISOString() })
+      .eq("id", userId);
+    if (reward > 0) await addBalance(userId, reward);
+    return { reward, skipped: false as const };
   });
 
 export const completeTask = createServerFn({ method: "POST" })
@@ -209,10 +252,12 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
     const amountFlames = Math.round(data.amountUsdt * economy.flames_per_usdt);
     const { data: profile } = await supabaseAdmin
       .from("profiles")
-      .select("balance")
+      .select("balance,suspended,telegram_id,username,first_name")
       .eq("id", userId)
       .single();
-    if (!profile || Number(profile.balance) < amountFlames) {
+    if (!profile) throw new Error("Profile not found");
+    if (profile.suspended) throw new Error("Account is suspended");
+    if (Number(profile.balance) < amountFlames) {
       throw new Error("Insufficient balance");
     }
 
@@ -232,5 +277,12 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
       .select()
       .single();
     if (error) throw new Error(error.message);
+
+    const { notifyAdmin } = await import("./telegram-bot.server");
+    const uname = profile.username ? `@${profile.username}` : profile.first_name ?? "user";
+    await notifyAdmin(
+      `💸 <b>New withdraw request</b>\nUser: ${uname} (TG <code>${profile.telegram_id}</code>)\nAmount: <b>${data.amountUsdt} USDT</b> (${amountFlames} coins)\nWallet: <code>${data.walletAddress}</code>`,
+    );
+
     return { id: wd.id };
   });

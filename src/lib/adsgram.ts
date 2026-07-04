@@ -39,3 +39,15 @@ export async function showAd(blockId: string): Promise<ShowPromiseResult> {
   }
   return ctrl.show();
 }
+
+// Pick a random block id from the available reward + interstitial blocks.
+export function pickRandomBlockId(
+  rewardBlockId?: string | null,
+  interstitialBlockId?: string | null,
+): string | null {
+  const blocks = [rewardBlockId, interstitialBlockId].filter(
+    (b): b is string => typeof b === "string" && b.length > 0,
+  );
+  if (blocks.length === 0) return null;
+  return blocks[Math.floor(Math.random() * blocks.length)];
+}
