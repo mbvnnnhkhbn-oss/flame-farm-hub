@@ -252,10 +252,12 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
     const amountFlames = Math.round(data.amountUsdt * economy.flames_per_usdt);
     const { data: profile } = await supabaseAdmin
       .from("profiles")
-      .select("balance")
+      .select("balance,suspended,telegram_id,username,first_name")
       .eq("id", userId)
       .single();
-    if (!profile || Number(profile.balance) < amountFlames) {
+    if (!profile) throw new Error("Profile not found");
+    if (profile.suspended) throw new Error("Account is suspended");
+    if (Number(profile.balance) < amountFlames) {
       throw new Error("Insufficient balance");
     }
 
@@ -275,5 +277,12 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
       .select()
       .single();
     if (error) throw new Error(error.message);
+
+    const { notifyAdmin } = await import("./telegram-bot.server");
+    const uname = profile.username ? `@${profile.username}` : profile.first_name ?? "user";
+    await notifyAdmin(
+      `💸 <b>New withdraw request</b>\nUser: ${uname} (TG <code>${profile.telegram_id}</code>)\nAmount: <b>${data.amountUsdt} USDT</b> (${amountFlames} coins)\nWallet: <code>${data.walletAddress}</code>`,
+    );
+
     return { id: wd.id };
   });
