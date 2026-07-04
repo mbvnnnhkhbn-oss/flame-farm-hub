@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Flame, Gift, Megaphone, TrendingUp, Wallet, Trophy, PlayCircle, ListChecks } from "lucide-react";
 
@@ -8,7 +9,7 @@ import { BrandMark } from "@/components/BrandMark";
 import { BalanceCard } from "@/components/BalanceCard";
 import { useCurrentUserId } from "@/hooks/use-current-user";
 import { profileQuery, settingsQuery, announcementsQuery } from "@/lib/queries";
-import { claimDailyCheckin } from "@/lib/actions.functions";
+import { claimDailyCheckin, claimOpenBonus } from "@/lib/actions.functions";
 import { formatFlames } from "@/lib/format";
 import { haptic } from "@/lib/telegram";
 
