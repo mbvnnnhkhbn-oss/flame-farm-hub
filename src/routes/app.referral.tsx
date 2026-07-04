@@ -18,10 +18,11 @@ function ReferralPage() {
   const referrals = useQuery({ ...referralsQuery(userId), enabled: !!userId });
   const settings = useQuery(settingsQuery());
 
-  const botUsername = settings.data?.app.bot_username ?? "CoinFlamesBot";
-  const inviteBonus = settings.data?.referral.invite_bonus ?? 1000;
+  const botUsername = settings.data?.app.bot_username ?? "Coinflamesbot";
+  const startAppName = settings.data?.app.start_app_name ?? "coinflames";
+  const inviteBonus = settings.data?.referral.invite_bonus ?? 150;
   const link = profile.data
-    ? `https://t.me/${botUsername}/app?startapp=${profile.data.telegram_id}`
+    ? `https://t.me/${botUsername}/${startAppName}?startapp=${profile.data.telegram_id}`
     : "";
 
   const totalReferrals = referrals.data?.length ?? 0;
