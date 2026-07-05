@@ -20,7 +20,13 @@ export const settingsQuery = () =>
       const map: Record<string, unknown> = {};
       for (const row of data ?? []) map[row.key] = row.value;
       return map as {
-        economy: { flames_per_usdt: number; min_withdraw_usdt: number; max_withdraw_usdt: number };
+        economy: {
+          flames_per_usdt: number;
+          min_withdraw_usdt: number;
+          max_withdraw_usdt: number;
+          withdraw_fee_flat_usdt?: number;
+          withdraw_fee_pct?: number;
+        };
         ads: {
           reward_per_ad: number;
           daily_limit: number;
@@ -31,8 +37,16 @@ export const settingsQuery = () =>
           watch_seconds_interstitial?: number;
         };
         daily_rewards: Record<string, number>;
-        referral: { invite_bonus: number; commission_pct: number };
-        app: { bot_username: string; start_app_name?: string; support_url: string; admin_chat_id?: string };
+        referral: {
+          invite_bonus: number;
+          commission_pct: number;
+          join_bonus?: number;
+          day1_bonus?: number;
+          day2_bonus?: number;
+          day1_ads_required?: number;
+          day2_ads_required?: number;
+        };
+        app: { bot_username: string; start_app_name?: string; support_url: string; admin_chat_id?: string; community_url?: string; payment_channel_url?: string; payment_channel_chat_id?: string };
         open_bonus?: { min: number; max: number; cooldown_hours: number };
       };
     },
