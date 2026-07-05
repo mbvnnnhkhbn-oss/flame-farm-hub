@@ -212,25 +212,52 @@ export type Database = {
         Row: {
           bonus_amount: number
           bonus_paid: boolean
+          commission_pending: number
           created_at: string
+          day1_bonus: number
+          day1_paid: boolean
+          day2_bonus: number
+          day2_paid: boolean
           id: string
+          join_bonus: number
+          join_paid: boolean
+          lifetime_commission: number
           referred_id: string
+          referred_joined_date: string
           referrer_id: string
         }
         Insert: {
           bonus_amount?: number
           bonus_paid?: boolean
+          commission_pending?: number
           created_at?: string
+          day1_bonus?: number
+          day1_paid?: boolean
+          day2_bonus?: number
+          day2_paid?: boolean
           id?: string
+          join_bonus?: number
+          join_paid?: boolean
+          lifetime_commission?: number
           referred_id: string
+          referred_joined_date?: string
           referrer_id: string
         }
         Update: {
           bonus_amount?: number
           bonus_paid?: boolean
+          commission_pending?: number
           created_at?: string
+          day1_bonus?: number
+          day1_paid?: boolean
+          day2_bonus?: number
+          day2_paid?: boolean
           id?: string
+          join_bonus?: number
+          join_paid?: boolean
+          lifetime_commission?: number
           referred_id?: string
+          referred_joined_date?: string
           referrer_id?: string
         }
         Relationships: []
