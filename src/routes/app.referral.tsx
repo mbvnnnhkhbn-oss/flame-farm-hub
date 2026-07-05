@@ -53,7 +53,7 @@ function ReferralPage() {
   const claim = useMutation({
     mutationFn: () => claimReferralCommission(),
     onSuccess: (r) => {
-      haptic("success");
+      haptic("medium");
       toast.success(`Claimed ${formatFlames(r.claimed)} Flames`);
       qc.invalidateQueries({ queryKey: ["referrals"] });
       qc.invalidateQueries({ queryKey: ["profile"] });
