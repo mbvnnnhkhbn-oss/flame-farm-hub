@@ -240,7 +240,15 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
       flames_per_usdt: number;
       min_withdraw_usdt: number;
       max_withdraw_usdt: number;
-    }>("economy", { flames_per_usdt: 100000, min_withdraw_usdt: 1, max_withdraw_usdt: 100 });
+      withdraw_fee_flat_usdt?: number;
+      withdraw_fee_pct?: number;
+    }>("economy", {
+      flames_per_usdt: 10000,
+      min_withdraw_usdt: 1,
+      max_withdraw_usdt: 100,
+      withdraw_fee_flat_usdt: 0.01,
+      withdraw_fee_pct: 5,
+    });
 
     if (data.amountUsdt < economy.min_withdraw_usdt) {
       throw new Error(`Minimum withdraw is ${economy.min_withdraw_usdt} USDT`);
@@ -248,6 +256,12 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
     if (data.amountUsdt > economy.max_withdraw_usdt) {
       throw new Error(`Maximum withdraw is ${economy.max_withdraw_usdt} USDT`);
     }
+
+    const feeFlat = Number(economy.withdraw_fee_flat_usdt ?? 0.01);
+    const feePct = Number(economy.withdraw_fee_pct ?? 5);
+    const fee = +(feeFlat + (data.amountUsdt * feePct) / 100).toFixed(6);
+    const netUsdt = +(data.amountUsdt - fee).toFixed(6);
+    if (netUsdt <= 0) throw new Error("Amount too small after fees");
 
     const amountFlames = Math.round(data.amountUsdt * economy.flames_per_usdt);
     const { data: profile } = await supabaseAdmin
@@ -273,16 +287,29 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
         amount_flames: amountFlames,
         amount_usdt: data.amountUsdt,
         wallet_address: data.walletAddress,
+        admin_note: `fee=${fee} net=${netUsdt}`,
       })
       .select()
       .single();
     if (error) throw new Error(error.message);
 
-    const { notifyAdmin } = await import("./telegram-bot.server");
+    const { notifyAdmin, sendTelegramMessage } = await import("./telegram-bot.server");
     const uname = profile.username ? `@${profile.username}` : profile.first_name ?? "user";
     await notifyAdmin(
-      `💸 <b>New withdraw request</b>\nUser: ${uname} (TG <code>${profile.telegram_id}</code>)\nAmount: <b>${data.amountUsdt} USDT</b> (${amountFlames} coins)\nWallet: <code>${data.walletAddress}</code>`,
+      `💸 <b>New withdraw request</b>\nUser: ${uname} (TG <code>${profile.telegram_id}</code>)\nGross: <b>${data.amountUsdt} USDT</b>\nFee: ${fee} USDT (${feeFlat} + ${feePct}%)\nNet: <b>${netUsdt} USDT</b>\nCoins: ${amountFlames}\nWallet: <code>${data.walletAddress}</code>`,
     );
+    if (profile.telegram_id) {
+      await sendTelegramMessage(
+        profile.telegram_id,
+        `🕒 <b>Withdraw request received</b>\nGross: ${data.amountUsdt} USDT\nFee: ${fee} USDT\nYou will receive: <b>${netUsdt} USDT</b>\nWe'll notify you once approved.`,
+      );
+    }
 
-    return { id: wd.id };
+    await supabaseAdmin.from("notifications").insert({
+      user_id: userId,
+      title: "Withdraw request submitted",
+      body: `Gross ${data.amountUsdt} USDT · Fee ${fee} · Net ${netUsdt} USDT`,
+    });
+
+    return { id: wd.id, fee, netUsdt };
   });

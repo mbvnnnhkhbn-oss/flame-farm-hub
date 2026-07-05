@@ -1,9 +1,12 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Home, ListChecks, PlayCircle, Users, User } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import { settingsQuery } from "@/lib/queries";
+import { showInterstitialSilently } from "@/lib/adsgram";
 
-const tabs: { to: string; label: string; icon: typeof Home; exact?: boolean }[] = [
-  { to: "/app", label: "Home", icon: Home, exact: true },
+const tabs: { to: string; label: string; icon: typeof Home; exact?: boolean; showAdOnTap?: boolean }[] = [
+  { to: "/app", label: "Home", icon: Home, exact: true, showAdOnTap: true },
   { to: "/app/tasks", label: "Tasks", icon: ListChecks },
   { to: "/app/earn", label: "Earn", icon: PlayCircle },
   { to: "/app/referral", label: "Invite", icon: Users },
@@ -12,6 +15,8 @@ const tabs: { to: string; label: string; icon: typeof Home; exact?: boolean }[] 
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const settings = useQuery(settingsQuery());
+  const intBlock = settings.data?.ads?.block_id_interstitial;
 
   return (
     <div className="min-h-screen pb-24">
@@ -26,6 +31,11 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Link
                 key={t.to}
                 to={t.to as never}
+                onClick={() => {
+                  if (t.showAdOnTap) {
+                    void showInterstitialSilently(intBlock);
+                  }
+                }}
                 className="flex flex-col items-center gap-1 py-3 text-xs transition-colors"
               >
                 <span

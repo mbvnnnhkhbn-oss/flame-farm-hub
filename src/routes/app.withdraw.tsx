@@ -24,11 +24,16 @@ function WithdrawPage() {
   const [amount, setAmount] = useState("");
   const [wallet, setWallet] = useState("");
 
-  const rate = settings.data?.economy.flames_per_usdt ?? 100000;
+  const rate = settings.data?.economy.flames_per_usdt ?? 10000;
   const minUsdt = settings.data?.economy.min_withdraw_usdt ?? 1;
   const maxUsdt = settings.data?.economy.max_withdraw_usdt ?? 100;
+  const feeFlat = settings.data?.economy.withdraw_fee_flat_usdt ?? 0.01;
+  const feePct = settings.data?.economy.withdraw_fee_pct ?? 5;
   const balance = Number(profile.data?.balance ?? 0);
   const maxAvailable = Math.min(flamesToUsdt(balance, rate), maxUsdt);
+  const gross = Number(amount) || 0;
+  const fee = gross > 0 ? +(feeFlat + (gross * feePct) / 100).toFixed(6) : 0;
+  const net = gross > 0 ? Math.max(0, +(gross - fee).toFixed(6)) : 0;
 
   const withdrawFn = useServerFn(requestWithdrawal);
   const mut = useMutation({
@@ -97,6 +102,16 @@ function WithdrawPage() {
             </div>
             <div className="mt-1 text-[10px] text-muted-foreground">
               = {formatFlames(inputFlames)} Flames · Max {maxUsdt} USDT
+            </div>
+            <div className="mt-2 rounded-xl bg-secondary/30 px-3 py-2 text-[11px] text-muted-foreground">
+              <div className="flex justify-between">
+                <span>Fee</span>
+                <span>${feeFlat.toFixed(2)} + {feePct}% = ${fee.toFixed(4)}</span>
+              </div>
+              <div className="mt-1 flex justify-between font-bold text-foreground">
+                <span>You receive</span>
+                <span>${net.toFixed(4)}</span>
+              </div>
             </div>
           </div>
 
