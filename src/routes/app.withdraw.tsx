@@ -24,11 +24,16 @@ function WithdrawPage() {
   const [amount, setAmount] = useState("");
   const [wallet, setWallet] = useState("");
 
-  const rate = settings.data?.economy.flames_per_usdt ?? 100000;
+  const rate = settings.data?.economy.flames_per_usdt ?? 10000;
   const minUsdt = settings.data?.economy.min_withdraw_usdt ?? 1;
   const maxUsdt = settings.data?.economy.max_withdraw_usdt ?? 100;
+  const feeFlat = settings.data?.economy.withdraw_fee_flat_usdt ?? 0.01;
+  const feePct = settings.data?.economy.withdraw_fee_pct ?? 5;
   const balance = Number(profile.data?.balance ?? 0);
   const maxAvailable = Math.min(flamesToUsdt(balance, rate), maxUsdt);
+  const gross = Number(amount) || 0;
+  const fee = gross > 0 ? +(feeFlat + (gross * feePct) / 100).toFixed(6) : 0;
+  const net = gross > 0 ? Math.max(0, +(gross - fee).toFixed(6)) : 0;
 
   const withdrawFn = useServerFn(requestWithdrawal);
   const mut = useMutation({
