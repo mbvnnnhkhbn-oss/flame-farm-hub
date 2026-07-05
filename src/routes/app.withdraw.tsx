@@ -103,6 +103,16 @@ function WithdrawPage() {
             <div className="mt-1 text-[10px] text-muted-foreground">
               = {formatFlames(inputFlames)} Flames · Max {maxUsdt} USDT
             </div>
+            <div className="mt-2 rounded-xl bg-secondary/30 px-3 py-2 text-[11px] text-muted-foreground">
+              <div className="flex justify-between">
+                <span>Fee</span>
+                <span>${feeFlat.toFixed(2)} + {feePct}% = ${fee.toFixed(4)}</span>
+              </div>
+              <div className="mt-1 flex justify-between font-bold text-foreground">
+                <span>You receive</span>
+                <span>${net.toFixed(4)}</span>
+              </div>
+            </div>
           </div>
 
           <div>
