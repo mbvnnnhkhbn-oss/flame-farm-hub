@@ -4,6 +4,26 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 type DailyRewards = Record<string, number>;
 
+async function payReferralCommission(userId: string, earnedAmount: number) {
+  if (earnedAmount <= 0) return;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: ref } = await supabaseAdmin
+    .from("referrals")
+    .select("id,referrer_id,commission_pending")
+    .eq("referred_id", userId)
+    .maybeSingle();
+  if (!ref) return;
+  const pct = await getSetting<{ commission_pct?: number }>("referral", {}).then(
+    (v) => Number(v.commission_pct ?? 5),
+  );
+  const commission = Math.floor((earnedAmount * pct) / 100);
+  if (commission <= 0) return;
+  await supabaseAdmin
+    .from("referrals")
+    .update({ commission_pending: Number(ref.commission_pending ?? 0) + commission })
+    .eq("id", ref.id);
+}
+
 async function addBalance(userId: string, amount: number) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const today = new Date().toISOString().slice(0, 10);
@@ -24,6 +44,7 @@ async function addBalance(userId: string, amount: number) {
       today_date: today,
     })
     .eq("id", userId);
+  await payReferralCommission(userId, amount);
 }
 
 async function getSetting<T>(key: string, fallback: T): Promise<T> {
