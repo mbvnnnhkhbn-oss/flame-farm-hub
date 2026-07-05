@@ -76,6 +76,32 @@ function AppLayout() {
     };
   }, []);
 
+  // Fire an interstitial ad the first time the app opens per session.
+  useEffect(() => {
+    if (state.status !== "ready") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data } = await supabase
+          .from("settings")
+          .select("value")
+          .eq("key", "ads")
+          .maybeSingle();
+        if (cancelled) return;
+        const cfg = (data?.value ?? {}) as { block_id_interstitial?: string };
+        const { showInterstitialSilently } = await import("@/lib/adsgram");
+        // small delay to let SDK finish init
+        setTimeout(() => showInterstitialSilently(cfg.block_id_interstitial), 800);
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [state.status]);
+
   if (state.status === "loading") return <SplashScreen label="Warming up the flames…" />;
   if (state.status === "no-telegram") return <OpenInTelegramScreen />;
   if (state.status === "error")
