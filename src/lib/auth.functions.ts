@@ -120,20 +120,55 @@ export const telegramSignIn = createServerFn({ method: "POST" })
         throw new Error(`Failed to create profile: ${profileErr.message}`);
       }
 
-      // Referral row only if not auto-suspended
+      // Referral row + immediate join bonus (only if not auto-suspended)
       if (referrerProfileId && !ipDuplicate) {
         const { data: refSettings } = await supabaseAdmin
           .from("settings")
           .select("value")
           .eq("key", "referral")
           .maybeSingle();
-        const bonus =
-          (refSettings?.value as { invite_bonus?: number } | null)?.invite_bonus ?? 150;
+        const cfg = (refSettings?.value as {
+          join_bonus?: number;
+          day1_bonus?: number;
+          day2_bonus?: number;
+        } | null) ?? {};
+        const joinBonus = Number(cfg.join_bonus ?? 25);
+        const day1Bonus = Number(cfg.day1_bonus ?? 50);
+        const day2Bonus = Number(cfg.day2_bonus ?? 75);
+        const today = new Date().toISOString().slice(0, 10);
+
         await supabaseAdmin.from("referrals").insert({
           referrer_id: referrerProfileId,
           referred_id: userId,
-          bonus_amount: bonus,
+          bonus_amount: joinBonus,
+          join_bonus: joinBonus,
+          day1_bonus: day1Bonus,
+          day2_bonus: day2Bonus,
+          join_paid: true,
+          bonus_paid: true,
+          referred_joined_date: today,
         });
+
+        // Pay join bonus immediately to referrer
+        const { data: refP } = await supabaseAdmin
+          .from("profiles")
+          .select("balance,total_earned")
+          .eq("id", referrerProfileId)
+          .single();
+        if (refP) {
+          await supabaseAdmin
+            .from("profiles")
+            .update({
+              balance: Number(refP.balance) + joinBonus,
+              total_earned: Number(refP.total_earned) + joinBonus,
+            })
+            .eq("id", referrerProfileId);
+          await supabaseAdmin.from("notifications").insert({
+            user_id: referrerProfileId,
+            title: "Referral joined 🎉",
+            body: `+${joinBonus} Flames — your invite just joined CoinFlames!`,
+          });
+        }
       }
 
       // Admin notifications
