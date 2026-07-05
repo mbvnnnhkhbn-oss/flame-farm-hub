@@ -341,28 +341,7 @@ export const completeTask = createServerFn({ method: "POST" })
     });
     await addBalance(userId, Number(task.reward));
 
-    // Referral bonus payout on first approved task
-    const { count: approvedCount } = await supabaseAdmin
-      .from("task_completions")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .eq("status", "approved");
-    if ((approvedCount ?? 0) === 1) {
-      const { data: refRow } = await supabaseAdmin
-        .from("referrals")
-        .select("id,referrer_id,bonus_amount,bonus_paid")
-        .eq("referred_id", userId)
-        .maybeSingle();
-      if (refRow && !refRow.bonus_paid && refRow.bonus_amount > 0) {
-        await addBalance(refRow.referrer_id, Number(refRow.bonus_amount));
-        await supabaseAdmin.from("referrals").update({ bonus_paid: true }).eq("id", refRow.id);
-        await supabaseAdmin.from("notifications").insert({
-          user_id: refRow.referrer_id,
-          title: "Referral Bonus 🎉",
-          body: `You earned ${refRow.bonus_amount} Flames — your referral completed their first task!`,
-        });
-      }
-    }
+
 
     return { reward: Number(task.reward) };
   });
