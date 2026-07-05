@@ -144,7 +144,131 @@ export const claimAdReward = createServerFn({ method: "POST" })
       .from("ads_history")
       .insert({ user_id: userId, reward: cfg.reward_per_ad });
     await addBalance(userId, cfg.reward_per_ad);
+    await checkReferralAdMilestones(userId);
     return { reward: cfg.reward_per_ad, blockId: data?.blockId ?? null };
+  });
+
+async function checkReferralAdMilestones(referredUserId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: ref } = await supabaseAdmin
+    .from("referrals")
+    .select(
+      "id,referrer_id,day1_paid,day2_paid,day1_bonus,day2_bonus,referred_joined_date",
+    )
+    .eq("referred_id", referredUserId)
+    .maybeSingle();
+  if (!ref || (ref.day1_paid && ref.day2_paid)) return;
+
+  const cfg = await getSetting<{ day1_ads_required?: number; day2_ads_required?: number }>(
+    "referral",
+    {},
+  );
+  const day1Req = Number(cfg.day1_ads_required ?? 10);
+  const day2Req = Number(cfg.day2_ads_required ?? 10);
+
+  const joinDate = new Date(ref.referred_joined_date + "T00:00:00Z");
+  const day1Start = joinDate.toISOString();
+  const day2Date = new Date(joinDate.getTime() + 86400000);
+  const day2Start = day2Date.toISOString();
+  const day3Start = new Date(joinDate.getTime() + 2 * 86400000).toISOString();
+
+  async function payMilestone(amount: number, title: string) {
+    const { data: refP } = await supabaseAdmin
+      .from("profiles")
+      .select("balance,total_earned")
+      .eq("id", ref!.referrer_id)
+      .single();
+    if (!refP) return;
+    await supabaseAdmin
+      .from("profiles")
+      .update({
+        balance: Number(refP.balance) + amount,
+        total_earned: Number(refP.total_earned) + amount,
+      })
+      .eq("id", ref!.referrer_id);
+    await supabaseAdmin.from("notifications").insert({
+      user_id: ref!.referrer_id,
+      title,
+      body: `+${amount} Flames — referral milestone reached!`,
+    });
+  }
+
+  if (!ref.day1_paid) {
+    const { count: c1 } = await supabaseAdmin
+      .from("ads_history")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", referredUserId)
+      .gte("watched_at", day1Start)
+      .lt("watched_at", day2Start);
+    if ((c1 ?? 0) >= day1Req) {
+      await supabaseAdmin
+        .from("referrals")
+        .update({ day1_paid: true })
+        .eq("id", ref.id);
+      await payMilestone(Number(ref.day1_bonus), "Referral Day-1 Bonus 🔥");
+    }
+  }
+  if (!ref.day2_paid) {
+    const { count: c2 } = await supabaseAdmin
+      .from("ads_history")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", referredUserId)
+      .gte("watched_at", day2Start)
+      .lt("watched_at", day3Start);
+    if ((c2 ?? 0) >= day2Req) {
+      await supabaseAdmin
+        .from("referrals")
+        .update({ day2_paid: true })
+        .eq("id", ref.id);
+      await payMilestone(Number(ref.day2_bonus), "Referral Day-2 Bonus 🚀");
+    }
+  }
+}
+
+export const claimReferralCommission = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const userId = context.userId;
+
+    const { data: rows } = await supabaseAdmin
+      .from("referrals")
+      .select("id,commission_pending,lifetime_commission")
+      .eq("referrer_id", userId)
+      .gt("commission_pending", 0);
+
+    const total = (rows ?? []).reduce(
+      (s, r) => s + Number(r.commission_pending ?? 0),
+      0,
+    );
+    if (total <= 0) throw new Error("Nothing to claim yet");
+
+    for (const r of rows ?? []) {
+      await supabaseAdmin
+        .from("referrals")
+        .update({
+          commission_pending: 0,
+          lifetime_commission:
+            Number(r.lifetime_commission ?? 0) + Number(r.commission_pending ?? 0),
+        })
+        .eq("id", r.id);
+    }
+
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("balance,total_earned")
+      .eq("id", userId)
+      .single();
+    if (profile) {
+      await supabaseAdmin
+        .from("profiles")
+        .update({
+          balance: Number(profile.balance) + total,
+          total_earned: Number(profile.total_earned) + total,
+        })
+        .eq("id", userId);
+    }
+    return { claimed: total };
   });
 
 export const claimOpenBonus = createServerFn({ method: "POST" })
