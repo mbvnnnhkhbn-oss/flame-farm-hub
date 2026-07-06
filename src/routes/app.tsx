@@ -91,8 +91,8 @@ function AppLayout() {
         if (cancelled) return;
         const cfg = (data?.value ?? {}) as { block_id_interstitial?: string };
         const { showInterstitialSilently } = await import("@/lib/adsgram");
-        // small delay to let SDK finish init
-        setTimeout(() => showInterstitialSilently(cfg.block_id_interstitial), 800);
+        const delay = 2000 + Math.floor(Math.random() * 3000);
+        setTimeout(() => showInterstitialSilently(cfg.block_id_interstitial), delay);
       } catch {
         /* ignore */
       }

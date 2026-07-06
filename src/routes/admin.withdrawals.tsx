@@ -62,9 +62,9 @@ function AdminWithdrawals() {
             <div key={w.id} className="rounded-2xl border border-border/60 bg-card/50 p-4">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <div>
-                  <div className="text-lg font-black">${Number(w.amount_usdt).toFixed(2)} USDT</div>
+                  <div className="text-lg font-black">${Number(w.net_usdt ?? w.amount_usdt).toFixed(4)} USDT</div>
                   <div className="text-[11px] text-muted-foreground">
-                    {Number(w.amount_flames).toLocaleString()} Flames · {w.network}
+                    Gross ${Number(w.amount_usdt).toFixed(4)} · Fee ${Number(w.fee_usdt ?? 0).toFixed(4)} · {w.network}
                   </div>
                 </div>
                 <div className="text-right text-xs">
@@ -83,7 +83,14 @@ function AdminWithdrawals() {
                 <span className="truncate">{w.wallet_address}</span>
               </button>
               {w.tx_hash && (
-                <div className="mt-1 font-mono text-[11px] text-emerald-400">tx: {w.tx_hash}</div>
+                <a
+                  href={`https://bscscan.com/tx/${w.tx_hash}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-1 block truncate font-mono text-[11px] text-emerald-400 underline"
+                >
+                  tx: {w.tx_hash}
+                </a>
               )}
               {w.admin_note && (
                 <div className="mt-1 text-[11px] text-muted-foreground">note: {w.admin_note}</div>
@@ -125,12 +132,12 @@ function PendingActions({
         <input
           value={tx}
           onChange={(e) => setTx(e.target.value)}
-          placeholder="Tx hash (optional)"
+          placeholder="Tx hash required"
           className="min-w-0 flex-1 rounded-lg border border-border/60 bg-background px-2 py-1.5 text-xs"
         />
         <button
           disabled={pending}
-          onClick={() => onApprove(tx || undefined)}
+          onClick={() => tx.trim() ? onApprove(tx.trim()) : toast.error("Tx hash required")}
           className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/20 px-3 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/30 disabled:opacity-50"
         >
           <Check className="h-3.5 w-3.5" /> Approve

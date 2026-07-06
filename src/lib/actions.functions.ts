@@ -22,6 +22,11 @@ async function payReferralCommission(userId: string, earnedAmount: number) {
     .from("referrals")
     .update({ commission_pending: Number(ref.commission_pending ?? 0) + commission })
     .eq("id", ref.id);
+  const { sendUserBotMessage } = await import("./telegram-bot.server");
+  await sendUserBotMessage(
+    ref.referrer_id,
+    `🔥 <b>Referral commission pending</b>\n+${commission} Flames from your invite's earning. Open the app to claim it.`,
+  );
 }
 
 async function addBalance(userId: string, amount: number) {
@@ -191,6 +196,11 @@ async function checkReferralAdMilestones(referredUserId: string) {
       title,
       body: `+${amount} Flames — referral milestone reached!`,
     });
+      const { sendUserBotMessage } = await import("./telegram-bot.server");
+      await sendUserBotMessage(
+        ref!.referrer_id,
+        `🎉 <b>${title}</b>\n+${amount} Flames added to your balance.`,
+      );
   }
 
   if (!ref.day1_paid) {
@@ -271,6 +281,57 @@ export const claimReferralCommission = createServerFn({ method: "POST" })
     return { claimed: total };
   });
 
+export const claimRewardCode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ code: z.string().min(2).max(80) }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const userId = context.userId;
+    const code = data.code.trim().toUpperCase();
+
+    const { data: rewardCode } = await supabaseAdmin
+      .from("reward_codes")
+      .select("id,code,reward,max_claims,per_user_limit,active,expires_at")
+      .eq("code", code)
+      .maybeSingle();
+    if (!rewardCode || !rewardCode.active) throw new Error("Reward code is invalid");
+    if (rewardCode.expires_at && new Date(rewardCode.expires_at) < new Date()) {
+      throw new Error("Reward code has expired");
+    }
+
+    const { count: myClaims } = await supabaseAdmin
+      .from("reward_code_claims")
+      .select("id", { count: "exact", head: true })
+      .eq("code_id", rewardCode.id)
+      .eq("user_id", userId);
+    if ((myClaims ?? 0) >= Number(rewardCode.per_user_limit ?? 1)) {
+      throw new Error("You already claimed this code");
+    }
+
+    if (rewardCode.max_claims) {
+      const { count: totalClaims } = await supabaseAdmin
+        .from("reward_code_claims")
+        .select("id", { count: "exact", head: true })
+        .eq("code_id", rewardCode.id);
+      if ((totalClaims ?? 0) >= rewardCode.max_claims) throw new Error("Reward code limit reached");
+    }
+
+    await supabaseAdmin.from("reward_code_claims").insert({
+      code_id: rewardCode.id,
+      user_id: userId,
+      reward: rewardCode.reward,
+    });
+    await addBalance(userId, Number(rewardCode.reward));
+    await supabaseAdmin.from("notifications").insert({
+      user_id: userId,
+      title: "Reward code claimed 🎁",
+      body: `+${rewardCode.reward} Flames added to your balance.`,
+    });
+    return { reward: Number(rewardCode.reward) };
+  });
+
 export const claimOpenBonus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -317,7 +378,7 @@ export const completeTask = createServerFn({ method: "POST" })
 
     const { data: task } = await supabaseAdmin
       .from("tasks")
-      .select("id,reward,active,expires_at,verification_type")
+      .select("id,reward,active,expires_at,verification_type,type,target_chat")
       .eq("id", data.taskId)
       .maybeSingle();
     if (!task || !task.active) throw new Error("Task not available");
@@ -331,8 +392,21 @@ export const completeTask = createServerFn({ method: "POST" })
       .maybeSingle();
     if (existing) throw new Error("Task already completed");
 
-    // TODO Phase 2: real verification (Telegram getChatMember etc).
-    // For now auto-approve.
+    if (
+      task.verification_type === "bot" &&
+      (task.type === "telegram_join" || task.type === "telegram_group") &&
+      task.target_chat
+    ) {
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("telegram_id")
+        .eq("id", userId)
+        .single();
+      const { checkTelegramMembership } = await import("./telegram-bot.server");
+      const isMember = await checkTelegramMembership(task.target_chat, profile?.telegram_id ?? "");
+      if (!isMember) throw new Error("Join the Telegram channel/group first, then claim");
+    }
+
     await supabaseAdmin.from("task_completions").insert({
       user_id: userId,
       task_id: task.id,
@@ -410,6 +484,8 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
         user_id: userId,
         amount_flames: amountFlames,
         amount_usdt: data.amountUsdt,
+        fee_usdt: fee,
+        net_usdt: netUsdt,
         wallet_address: data.walletAddress,
         admin_note: `fee=${fee} net=${netUsdt}`,
       })

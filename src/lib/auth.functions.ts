@@ -37,7 +37,7 @@ export const telegramSignIn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { verifyInitData, deriveCredentials } = await import("./telegram-auth.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { notifyAdmin } = await import("./telegram-bot.server");
+    const { notifyAdmin, sendUserBotMessage } = await import("./telegram-bot.server");
 
     const result = verifyInitData(data.initData, data.devUser);
     const tgUser = result.user;
@@ -168,6 +168,10 @@ export const telegramSignIn = createServerFn({ method: "POST" })
             title: "Referral joined 🎉",
             body: `+${joinBonus} Flames — your invite just joined CoinFlames!`,
           });
+          await sendUserBotMessage(
+            referrerProfileId,
+            `🎉 <b>Referral joined</b>\n+${joinBonus} Flames added to your balance.`,
+          );
         }
       }
 

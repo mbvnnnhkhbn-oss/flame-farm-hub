@@ -33,7 +33,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 to={t.to as never}
                 onClick={() => {
                   if (t.showAdOnTap) {
-                    void showInterstitialSilently(intBlock);
+                    window.setTimeout(() => void showInterstitialSilently(intBlock), 150);
                   }
                 }}
                 className="flex flex-col items-center gap-1 py-3 text-xs transition-colors"

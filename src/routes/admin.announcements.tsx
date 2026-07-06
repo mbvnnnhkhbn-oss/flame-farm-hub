@@ -22,12 +22,14 @@ type AnnRow = {
 function AdminAnnouncements() {
   const qc = useQueryClient();
   const list = useQuery(adminAnnouncementsQuery());
-  const [editing, setEditing] = useState<(Partial<AnnRow> & { broadcast?: boolean }) | null>(null);
+  const [editing, setEditing] = useState<
+    (Partial<AnnRow> & { broadcast?: boolean; bot_broadcast?: boolean; channel_post?: boolean }) | null
+  >(null);
   const upFn = useServerFn(upsertAnnouncement);
   const delFn = useServerFn(deleteAnnouncement);
 
   const saveMut = useMutation({
-    mutationFn: (v: Partial<AnnRow> & { broadcast?: boolean }) =>
+    mutationFn: (v: Partial<AnnRow> & { broadcast?: boolean; bot_broadcast?: boolean; channel_post?: boolean }) =>
       upFn({
         data: {
           id: v.id,
@@ -36,6 +38,8 @@ function AdminAnnouncements() {
           pinned: v.pinned ?? false,
           active: v.active ?? true,
           broadcast: v.broadcast ?? false,
+          bot_broadcast: v.bot_broadcast ?? false,
+          channel_post: v.channel_post ?? false,
         },
       }),
     onSuccess: () => {
@@ -106,6 +110,22 @@ function AdminAnnouncements() {
                   onChange={(e) => setEditing({ ...editing, broadcast: e.target.checked })}
                 />
                 Broadcast as notification
+              </label>
+              <label className="inline-flex items-center gap-1.5">
+                <input
+                  type="checkbox"
+                  checked={editing.bot_broadcast ?? false}
+                  onChange={(e) => setEditing({ ...editing, bot_broadcast: e.target.checked })}
+                />
+                Send to all bot users
+              </label>
+              <label className="inline-flex items-center gap-1.5">
+                <input
+                  type="checkbox"
+                  checked={editing.channel_post ?? false}
+                  onChange={(e) => setEditing({ ...editing, channel_post: e.target.checked })}
+                />
+                Post to community channel
               </label>
             </div>
             <div className="flex justify-end gap-2">

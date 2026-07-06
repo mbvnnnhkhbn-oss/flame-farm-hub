@@ -25,7 +25,9 @@ import { Route as AdminWithdrawalsRouteImport } from './routes/admin.withdrawals
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminTasksRouteImport } from './routes/admin.tasks'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminRewardCodesRouteImport } from './routes/admin.reward-codes'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
+import { Route as ApiPublicTelegramWebhookRouteImport } from './routes/api/public/telegram/webhook'
 
 const AppRoute = AppRouteImport.update({
   id: '/app',
@@ -107,17 +109,29 @@ const AdminSettingsRoute = AdminSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminRewardCodesRoute = AdminRewardCodesRouteImport.update({
+  id: '/reward-codes',
+  path: '/reward-codes',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAnnouncementsRoute = AdminAnnouncementsRouteImport.update({
   id: '/announcements',
   path: '/announcements',
   getParentRoute: () => AdminRoute,
 } as any)
+const ApiPublicTelegramWebhookRoute =
+  ApiPublicTelegramWebhookRouteImport.update({
+    id: '/api/public/telegram/webhook',
+    path: '/api/public/telegram/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/admin/announcements': typeof AdminAnnouncementsRoute
+  '/admin/reward-codes': typeof AdminRewardCodesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tasks': typeof AdminTasksRoute
   '/admin/users': typeof AdminUsersRoute
@@ -131,10 +145,12 @@ export interface FileRoutesByFullPath {
   '/app/withdraw': typeof AppWithdrawRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
+  '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
+  '/admin/reward-codes': typeof AdminRewardCodesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tasks': typeof AdminTasksRoute
   '/admin/users': typeof AdminUsersRoute
@@ -148,6 +164,7 @@ export interface FileRoutesByTo {
   '/app/withdraw': typeof AppWithdrawRoute
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
+  '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -155,6 +172,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/admin/announcements': typeof AdminAnnouncementsRoute
+  '/admin/reward-codes': typeof AdminRewardCodesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tasks': typeof AdminTasksRoute
   '/admin/users': typeof AdminUsersRoute
@@ -168,6 +186,7 @@ export interface FileRoutesById {
   '/app/withdraw': typeof AppWithdrawRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
+  '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -176,6 +195,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/admin/announcements'
+    | '/admin/reward-codes'
     | '/admin/settings'
     | '/admin/tasks'
     | '/admin/users'
@@ -189,10 +209,12 @@ export interface FileRouteTypes {
     | '/app/withdraw'
     | '/admin/'
     | '/app/'
+    | '/api/public/telegram/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/admin/announcements'
+    | '/admin/reward-codes'
     | '/admin/settings'
     | '/admin/tasks'
     | '/admin/users'
@@ -206,12 +228,14 @@ export interface FileRouteTypes {
     | '/app/withdraw'
     | '/admin'
     | '/app'
+    | '/api/public/telegram/webhook'
   id:
     | '__root__'
     | '/'
     | '/admin'
     | '/app'
     | '/admin/announcements'
+    | '/admin/reward-codes'
     | '/admin/settings'
     | '/admin/tasks'
     | '/admin/users'
@@ -225,12 +249,14 @@ export interface FileRouteTypes {
     | '/app/withdraw'
     | '/admin/'
     | '/app/'
+    | '/api/public/telegram/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
+  ApiPublicTelegramWebhookRoute: typeof ApiPublicTelegramWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -347,6 +373,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/reward-codes': {
+      id: '/admin/reward-codes'
+      path: '/reward-codes'
+      fullPath: '/admin/reward-codes'
+      preLoaderRoute: typeof AdminRewardCodesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/announcements': {
       id: '/admin/announcements'
       path: '/announcements'
@@ -354,11 +387,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAnnouncementsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/api/public/telegram/webhook': {
+      id: '/api/public/telegram/webhook'
+      path: '/api/public/telegram/webhook'
+      fullPath: '/api/public/telegram/webhook'
+      preLoaderRoute: typeof ApiPublicTelegramWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface AdminRouteChildren {
   AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
+  AdminRewardCodesRoute: typeof AdminRewardCodesRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminTasksRoute: typeof AdminTasksRoute
   AdminUsersRoute: typeof AdminUsersRoute
@@ -368,6 +409,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAnnouncementsRoute: AdminAnnouncementsRoute,
+  AdminRewardCodesRoute: AdminRewardCodesRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminTasksRoute: AdminTasksRoute,
   AdminUsersRoute: AdminUsersRoute,
@@ -405,6 +447,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
+  ApiPublicTelegramWebhookRoute: ApiPublicTelegramWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

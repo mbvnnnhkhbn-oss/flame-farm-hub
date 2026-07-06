@@ -1,15 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Flame, Gift, Megaphone, TrendingUp, Wallet, Trophy, PlayCircle, ListChecks } from "lucide-react";
+import { Flame, Gift, Megaphone, TrendingUp, Wallet, Trophy, PlayCircle, ListChecks, Ticket } from "lucide-react";
 
 import { BrandMark } from "@/components/BrandMark";
 import { BalanceCard } from "@/components/BalanceCard";
 import { useCurrentUserId } from "@/hooks/use-current-user";
 import { profileQuery, settingsQuery, announcementsQuery } from "@/lib/queries";
-import { claimDailyCheckin, claimOpenBonus } from "@/lib/actions.functions";
+import { claimDailyCheckin, claimOpenBonus, claimRewardCode } from "@/lib/actions.functions";
 import { formatFlames } from "@/lib/format";
 import { haptic } from "@/lib/telegram";
 
@@ -25,6 +25,8 @@ function HomePage() {
   const announcements = useQuery(announcementsQuery());
 
   const checkinFn = useServerFn(claimDailyCheckin);
+  const rewardCodeFn = useServerFn(claimRewardCode);
+  const [rewardCode, setRewardCode] = useState("");
   const checkinMut = useMutation({
     mutationFn: async () => {
       const res = await checkinFn();
@@ -71,6 +73,17 @@ function HomePage() {
   const canCheckIn =
     profile.data && profile.data.last_checkin_date !== new Date().toISOString().slice(0, 10);
 
+  const rewardCodeMut = useMutation({
+    mutationFn: (code: string) => rewardCodeFn({ data: { code } }),
+    onSuccess: (res) => {
+      haptic("medium");
+      toast.success(`+${formatFlames(res.reward)} Flames claimed!`);
+      setRewardCode("");
+      qc.invalidateQueries({ queryKey: ["profile", userId] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Invalid code"),
+  });
+
   return (
     <div className="space-y-5">
       <header className="flex items-center justify-between pt-2">
@@ -100,6 +113,27 @@ function HomePage() {
         totalEarned={Number(profile.data?.total_earned ?? 0)}
         ratePerUsdt={rate}
       />
+
+      <div className="rounded-2xl border border-accent/30 bg-card/50 p-4">
+        <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+          <Ticket className="h-4 w-4 text-accent" /> Reward Code
+        </div>
+        <div className="flex gap-2">
+          <input
+            value={rewardCode}
+            onChange={(e) => setRewardCode(e.target.value.toUpperCase())}
+            placeholder="ENTER CODE"
+            className="min-w-0 flex-1 rounded-xl border border-border/60 bg-secondary/40 px-3 py-2 font-mono text-sm outline-none"
+          />
+          <button
+            disabled={rewardCodeMut.isPending || rewardCode.trim().length < 2}
+            onClick={() => rewardCodeMut.mutate(rewardCode)}
+            className="rounded-xl bg-gradient-gold px-4 py-2 text-xs font-bold text-accent-foreground disabled:opacity-40"
+          >
+            Claim
+          </button>
+        </div>
+      </div>
 
       <Link
         to="/app/withdraw"

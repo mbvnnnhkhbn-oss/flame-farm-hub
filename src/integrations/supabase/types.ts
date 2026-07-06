@@ -262,6 +262,74 @@ export type Database = {
         }
         Relationships: []
       }
+      reward_code_claims: {
+        Row: {
+          claimed_at: string
+          code_id: string
+          id: string
+          reward: number
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string
+          code_id: string
+          id?: string
+          reward?: number
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string
+          code_id?: string
+          id?: string
+          reward?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reward_code_claims_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "reward_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reward_codes: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          max_claims: number | null
+          per_user_limit: number
+          reward: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          max_claims?: number | null
+          per_user_limit?: number
+          reward?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          max_claims?: number | null
+          per_user_limit?: number
+          reward?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           key: string
@@ -387,7 +455,9 @@ export type Database = {
           amount_flames: number
           amount_usdt: number
           created_at: string
+          fee_usdt: number
           id: string
+          net_usdt: number | null
           network: string
           status: Database["public"]["Enums"]["withdraw_status"]
           tx_hash: string | null
@@ -400,7 +470,9 @@ export type Database = {
           amount_flames: number
           amount_usdt: number
           created_at?: string
+          fee_usdt?: number
           id?: string
+          net_usdt?: number | null
           network?: string
           status?: Database["public"]["Enums"]["withdraw_status"]
           tx_hash?: string | null
@@ -413,7 +485,9 @@ export type Database = {
           amount_flames?: number
           amount_usdt?: number
           created_at?: string
+          fee_usdt?: number
           id?: string
+          net_usdt?: number | null
           network?: string
           status?: Database["public"]["Enums"]["withdraw_status"]
           tx_hash?: string | null

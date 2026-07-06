@@ -150,43 +150,64 @@ export const decideWithdrawal = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { sendTelegramMessage } = await import("@/lib/telegram-bot.server");
+    const { postToConfiguredChannel, sendTelegramMessage } = await import("@/lib/telegram-bot.server");
 
     const { data: wd, error: readErr } = await supabaseAdmin
       .from("withdrawals")
-      .select("id,user_id,amount_usdt,amount_flames,status")
+      .select("id,user_id,amount_usdt,amount_flames,fee_usdt,net_usdt,wallet_address,status")
       .eq("id", data.id)
       .single();
     if (readErr || !wd) throw new Error("Withdrawal not found");
     if (wd.status !== "pending") throw new Error(`Already ${wd.status}`);
 
     if (data.decision === "approved") {
+      const txHash = (data.tx_hash ?? "").trim();
+      if (!txHash) throw new Error("Tx hash is required for approval");
+      const txUrl = `https://bscscan.com/tx/${encodeURIComponent(txHash)}`;
+      const miniAppUrl = "https://t.me/Coinflamesbot/coinflames";
       const { error } = await supabaseAdmin
         .from("withdrawals")
-        .update({ status: "approved", tx_hash: data.tx_hash ?? null, admin_note: data.admin_note ?? null })
+        .update({ status: "approved", tx_hash: txHash, admin_note: data.admin_note ?? null })
         .eq("id", wd.id);
       if (error) throw new Error(error.message);
       await supabaseAdmin.from("notifications").insert({
         user_id: wd.user_id,
         title: "Withdrawal Approved ✅",
-        body: `Your withdrawal of ${wd.amount_usdt} USDT has been paid.${
-          data.tx_hash ? ` Tx: ${data.tx_hash}` : ""
-        }`,
+        body: `Your withdrawal of ${wd.net_usdt ?? wd.amount_usdt} USDT has been paid. Tx: ${txHash}`,
       });
       // Send Telegram DM
       const { data: prof } = await supabaseAdmin
         .from("profiles")
-        .select("telegram_id")
+        .select("telegram_id,username,first_name")
         .eq("id", wd.user_id)
         .maybeSingle();
       if (prof?.telegram_id) {
         await sendTelegramMessage(
           prof.telegram_id,
-          `✅ <b>Withdrawal Approved</b>\nAmount: <b>${wd.amount_usdt} USDT</b>${
-            data.tx_hash ? `\nTx: <code>${data.tx_hash}</code>` : ""
-          }`,
+          `✅ <b>Withdrawal Approved</b>\nGross: ${wd.amount_usdt} USDT\nFee: ${wd.fee_usdt ?? 0} USDT\nPaid: <b>${wd.net_usdt ?? wd.amount_usdt} USDT</b>\nTx: <code>${txHash}</code>`,
+          {
+            reply_markup: {
+              inline_keyboard: [[
+                { text: "View Transaction", url: txUrl },
+                { text: "Open Mini App", url: miniAppUrl },
+              ]],
+            },
+          },
         );
       }
+      const userLabel = prof?.username ? `@${prof.username}` : prof?.first_name ?? "CoinFlames user";
+      await postToConfiguredChannel(
+        "payment_channel_chat_id",
+        `💸 <b>Payment Sent</b>\nUser: ${userLabel}\nPaid: <b>${wd.net_usdt ?? wd.amount_usdt} USDT</b>\nNetwork: BEP20\nWallet: <code>${wd.wallet_address}</code>\nTx: <code>${txHash}</code>`,
+        {
+          reply_markup: {
+            inline_keyboard: [[
+              { text: "View Transaction", url: txUrl },
+              { text: "Open Mini App", url: miniAppUrl },
+            ]],
+          },
+        },
+      );
     } else {
       // Refund flames on rejection
       const { data: prof } = await supabaseAdmin
@@ -230,6 +251,8 @@ const annInput = z.object({
   pinned: z.boolean().default(false),
   active: z.boolean().default(true),
   broadcast: z.boolean().default(false),
+  bot_broadcast: z.boolean().default(false),
+  channel_post: z.boolean().default(false),
 });
 
 export const upsertAnnouncement = createServerFn({ method: "POST" })
@@ -238,7 +261,7 @@ export const upsertAnnouncement = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { broadcast, ...payload } = data;
+    const { bot_broadcast, broadcast, channel_post, ...payload } = data;
     let id = payload.id;
     if (id) {
       const { error } = await supabaseAdmin.from("announcements").update(payload).eq("id", id);
@@ -258,6 +281,21 @@ export const upsertAnnouncement = createServerFn({ method: "POST" })
         title: payload.title,
         body: payload.body,
       });
+    }
+    if (bot_broadcast) {
+      const { sendTelegramMessage } = await import("@/lib/telegram-bot.server");
+      const { data: users } = await supabaseAdmin
+        .from("profiles")
+        .select("telegram_id")
+        .eq("suspended", false)
+        .not("telegram_id", "is", null);
+      for (const user of users ?? []) {
+        await sendTelegramMessage(user.telegram_id, `📣 <b>${payload.title}</b>\n\n${payload.body}`);
+      }
+    }
+    if (channel_post) {
+      const { postToConfiguredChannel } = await import("@/lib/telegram-bot.server");
+      await postToConfiguredChannel("community_chat_id", `📣 <b>${payload.title}</b>\n\n${payload.body}`);
     }
     return { id };
   });
@@ -345,4 +383,47 @@ export const adjustBalance = createServerFn({ method: "POST" })
       body: `${data.delta > 0 ? "+" : ""}${data.delta} Flames by admin.${data.note ? ` ${data.note}` : ""}`,
     });
     return { ok: true, newBalance };
+  });
+
+// ---------- Reward codes ----------
+const rewardCodeInput = z.object({
+  id: z.string().uuid().optional(),
+  code: z.string().min(2).max(80),
+  reward: z.number().int().positive(),
+  max_claims: z.number().int().positive().nullable().optional(),
+  per_user_limit: z.number().int().positive().default(1),
+  active: z.boolean().default(true),
+  expires_at: z.string().nullable().optional(),
+});
+
+export const upsertRewardCode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => rewardCodeInput.parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const payload = { ...data, code: data.code.trim().toUpperCase() };
+    if (payload.id) {
+      const { error } = await supabaseAdmin.from("reward_codes").update(payload).eq("id", payload.id);
+      if (error) throw new Error(error.message);
+      return { id: payload.id };
+    }
+    const { data: row, error } = await supabaseAdmin
+      .from("reward_codes")
+      .insert(payload)
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return { id: row.id };
+  });
+
+export const deleteRewardCode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("reward_codes").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
