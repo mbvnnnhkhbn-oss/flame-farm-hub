@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Flame, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { telegramSignIn } from "@/lib/auth.functions";
@@ -20,8 +20,11 @@ type AuthState =
 
 function AppLayout() {
   const [state, setState] = useState<AuthState>({ status: "loading" });
+  const authStarted = useRef(false);
 
   useEffect(() => {
+    if (authStarted.current) return;
+    authStarted.current = true;
     let cancelled = false;
 
     async function run() {
@@ -91,8 +94,8 @@ function AppLayout() {
         if (cancelled) return;
         const cfg = (data?.value ?? {}) as { block_id_interstitial?: string };
         const { showInterstitialSilently } = await import("@/lib/adsgram");
-        // small delay to let SDK finish init
-        setTimeout(() => showInterstitialSilently(cfg.block_id_interstitial), 800);
+        const delay = 2000 + Math.floor(Math.random() * 3000);
+        setTimeout(() => showInterstitialSilently(cfg.block_id_interstitial), delay);
       } catch {
         /* ignore */
       }

@@ -1,8 +1,8 @@
 import { createFileRoute, Outlet, Link, useLocation } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Flame, LayoutDashboard, ListChecks, Wallet, Megaphone, Users, Settings2, ShieldAlert } from "lucide-react";
+import { Flame, LayoutDashboard, ListChecks, Wallet, Megaphone, Users, Settings2, ShieldAlert, Ticket } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { telegramSignIn } from "@/lib/auth.functions";
@@ -19,6 +19,7 @@ export const Route = createFileRoute("/admin")({
 const NAV = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/tasks", label: "Tasks", icon: ListChecks },
+  { to: "/admin/reward-codes", label: "Codes", icon: Ticket },
   { to: "/admin/withdrawals", label: "Withdrawals", icon: Wallet },
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/announcements", label: "News", icon: Megaphone },
@@ -32,6 +33,7 @@ function AdminLayout() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [needsBrowserLogin, setNeedsBrowserLogin] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
+  const authStarted = useRef(false);
   const userId = useCurrentUserId();
   const qc = useQueryClient();
   const loc = useLocation();
@@ -70,6 +72,8 @@ function AdminLayout() {
   }
 
   useEffect(() => {
+    if (authStarted.current) return;
+    authStarted.current = true;
     let cancelled = false;
     async function run() {
       const { data: s } = await supabase.auth.getSession();
