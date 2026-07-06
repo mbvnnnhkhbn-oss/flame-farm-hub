@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Flame, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { telegramSignIn } from "@/lib/auth.functions";
@@ -20,8 +20,11 @@ type AuthState =
 
 function AppLayout() {
   const [state, setState] = useState<AuthState>({ status: "loading" });
+  const authStarted = useRef(false);
 
   useEffect(() => {
+    if (authStarted.current) return;
+    authStarted.current = true;
     let cancelled = false;
 
     async function run() {
