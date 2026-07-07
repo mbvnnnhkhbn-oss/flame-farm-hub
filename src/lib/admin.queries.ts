@@ -35,12 +35,24 @@ export const adminWithdrawalsQuery = (status?: "pending" | "approved" | "rejecte
     queryFn: async () => {
       let q = supabase
         .from("withdrawals")
-        .select("*, profile:user_id(telegram_id,username,first_name)")
+        .select("*")
         .order("created_at", { ascending: false });
       if (status) q = q.eq("status", status);
       const { data, error } = await q;
       if (error) throw error;
-      return data;
+      const rows = data ?? [];
+      const ids = Array.from(new Set(rows.map((r) => r.user_id).filter(Boolean)));
+      let profiles: Record<string, { telegram_id: number | null; username: string | null; first_name: string | null }> = {};
+      if (ids.length) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id,telegram_id,username,first_name")
+          .in("id", ids);
+        for (const p of profs ?? []) {
+          profiles[p.id] = { telegram_id: p.telegram_id, username: p.username, first_name: p.first_name };
+        }
+      }
+      return rows.map((r) => ({ ...r, profile: profiles[r.user_id] ?? null }));
     },
   });
 
@@ -63,7 +75,7 @@ export const adminRewardCodesQuery = () =>
     queryFn: async () => {
       const { data, error } = await supabase
         .from("reward_codes")
-        .select("*, claims:reward_code_claims(id)")
+        .select("*, claims:reward_code_claims!reward_code_claims_code_id_fkey(id)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -76,7 +88,7 @@ export const adminUsersQuery = (search?: string) =>
     queryFn: async () => {
       let q = supabase
         .from("profiles")
-        .select("id,telegram_id,username,first_name,balance,total_earned,banned,created_at")
+        .select("id,telegram_id,username,first_name,balance,total_earned,banned,suspended,suspend_reason,created_at")
         .order("created_at", { ascending: false })
         .limit(100);
       if (search && search.trim()) {
