@@ -112,7 +112,8 @@ function AdminUsers() {
                   </div>
                 </td>
               </tr>
-            ))}
+              );
+            })}
             {(users.data ?? []).length === 0 && (
               <tr>
                 <td colSpan={4} className="p-8 text-center text-sm text-muted-foreground">
