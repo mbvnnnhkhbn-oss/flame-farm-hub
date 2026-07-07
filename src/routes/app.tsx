@@ -16,6 +16,7 @@ type AuthState =
   | { status: "loading" }
   | { status: "ready" }
   | { status: "no-telegram" }
+  | { status: "suspended"; reason: string | null }
   | { status: "error"; message: string };
 
 function AppLayout() {
@@ -27,10 +28,28 @@ function AppLayout() {
     authStarted.current = true;
     let cancelled = false;
 
+    async function checkSuspension() {
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess.session?.user.id;
+      if (!uid) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("suspended,banned,suspend_reason")
+        .eq("id", uid)
+        .maybeSingle();
+      if (data && (data.suspended || data.banned)) {
+        return data.suspend_reason ?? "Your account has been suspended.";
+      }
+      return null;
+    }
+
     async function run() {
       const { data: sessionData } = await supabase.auth.getSession();
       if (sessionData.session) {
-        if (!cancelled) setState({ status: "ready" });
+        const reason = await checkSuspension();
+        if (cancelled) return;
+        if (reason !== null) setState({ status: "suspended", reason });
+        else setState({ status: "ready" });
         return;
       }
 
@@ -62,7 +81,10 @@ function AppLayout() {
           password: creds.password,
         });
         if (error) throw error;
-        if (!cancelled) setState({ status: "ready" });
+        const reason = await checkSuspension();
+        if (cancelled) return;
+        if (reason !== null) setState({ status: "suspended", reason });
+        else setState({ status: "ready" });
       } catch (err) {
         console.error("Telegram sign-in failed", err);
         if (!cancelled)
@@ -107,6 +129,14 @@ function AppLayout() {
 
   if (state.status === "loading") return <SplashScreen label="Warming up the flames…" />;
   if (state.status === "no-telegram") return <OpenInTelegramScreen />;
+  if (state.status === "suspended")
+    return (
+      <SplashScreen
+        label="Account suspended"
+        sublabel={state.reason ?? "Please contact support."}
+        error
+      />
+    );
   if (state.status === "error")
     return <SplashScreen label="Sign-in failed" sublabel={state.message} error />;
 
