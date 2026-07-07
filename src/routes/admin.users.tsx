@@ -60,13 +60,22 @@ function AdminUsers() {
             </tr>
           </thead>
           <tbody>
-            {(users.data ?? []).map((u) => (
+            {(users.data ?? []).map((u) => {
+              const isBlocked = u.banned || u.suspended;
+              return (
               <tr key={u.id} className="border-t border-border/40">
                 <td className="p-3">
                   <div className="flex items-center gap-2">
-                    {u.banned && <Ban className="h-3 w-3 text-destructive" />}
+                    {isBlocked && <Ban className="h-3 w-3 text-destructive" />}
                     <div>
-                      <div className="font-semibold">{u.first_name ?? "—"}</div>
+                      <div className="font-semibold flex items-center gap-1.5">
+                        {u.first_name ?? "—"}
+                        {isBlocked && (
+                          <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-destructive">
+                            Suspended
+                          </span>
+                        )}
+                      </div>
                       <div className="text-[10px] text-muted-foreground">
                         {u.username ? `@${u.username} · ` : ""}TG {u.telegram_id}
                       </div>
