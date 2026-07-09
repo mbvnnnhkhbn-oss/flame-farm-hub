@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, ListChecks, PlayCircle, Users, User, Shield } from "lucide-react";
+import { Home, ListChecks, PlayCircle, Users, User, Shield, Pickaxe } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { settingsQuery } from "@/lib/queries";
@@ -8,6 +8,7 @@ import { useIsAdmin } from "@/hooks/use-is-admin";
 
 const tabs: { to: string; label: string; icon: typeof Home; exact?: boolean; showAdOnTap?: boolean }[] = [
   { to: "/app", label: "Home", icon: Home, exact: true, showAdOnTap: true },
+  { to: "/app/mining", label: "Mine", icon: Pickaxe },
   { to: "/app/tasks", label: "Tasks", icon: ListChecks },
   { to: "/app/earn", label: "Earn", icon: PlayCircle },
   { to: "/app/referral", label: "Invite", icon: Users },
