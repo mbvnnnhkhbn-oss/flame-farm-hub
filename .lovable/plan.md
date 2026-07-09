@@ -1,85 +1,52 @@
-# CoinFlames — Telegram Mini App Build Plan
+# Remaining Work Plan
 
-මේක ලොකු scope එකක් නිසා එක turn එකකින් සම්පූර්ණයෙන් හදන්න බෑ. Phased approach එකකින් යමු. මුලින්ම **Phase 1 (MVP UI + Auth + DB)** හදනවා, ඊට පස්සේ ඔබේ feedback එකට අනුව අනිත් phases build කරනවා.
+Lovable Cloud එකේ `SUPABASE_SERVICE_ROLE_KEY` access කරන්න බැරි නිසා external Vercel deploy වෙනුවට **Lovable එකේම publish** කරමු (දැනටමත් `flame-farm-hub.lovable.app` live). ඉතුරු features ඔක්කොම මේ project එකේම implement කරනවා.
 
----
+## Phase 2 — Mining System
 
-## Phase 1 — Foundation (මේ turn එකේ)
+**Database:**
+- `mining_packages` table: name, hourly_reward, ads_required, daily_claim_limit, price (free/paid), active
+- `user_mining` table: user_id, package_id, started_at, last_claim_at, claims_today, expires_at
+- 4 default packages seeded:
+  1. Starter — 20 coins/hr, 1 ad, free
+  2. Bronze — 30 coins/hr, 2 ads, free
+  3. Silver — 50 coins/hr, 3 ads, free
+  4. Gold — 100 coins/hr, 5 ads (bonus tier)
 
-**Goal:** Telegram Mini App එක load වෙනවා, user auto-login වෙනවා, core screens navigate කරන්න පුළුවන්, database schema එක ready.
+**Logic:**
+- Claim once per hour, max 10/day per machine
+- Watching required ads unlocks the claim button
+- 1 hour countdown after claim → next claim
+- Mining auto-stops after 1 hour if not claimed
+- Bot notification on claim-ready via `sendUserBotMessage`
 
-### Frontend (TanStack Start + Tailwind)
-- Design system: dark theme, fire/gold gradient (orange → red → gold) matching CoinFlames logo
-- Telegram WebApp SDK integrate (`window.Telegram.WebApp`)
-- Bottom tab navigation: Home / Tasks / Earn / Referral / Profile
-- Screens (UI + wiring, real data from DB):
-  - Home (profile card, balance, today's earnings, withdraw button, announcements)
-  - Daily Check-in (7-day streak grid)
-  - Watch Ads (AdsGram placeholder, reward flow)
-  - Tasks (list + verify button)
-  - Referral (link + stats)
-  - Withdraw (USDT BEP20 form + history)
-  - Profile (info + settings)
-  - History (tabs: ads/tasks/daily/withdraw/referral)
-  - Leaderboard (top earners/referrers)
+**UI:**
+- New `/app/mining` route + bottom nav tab
+- Animated countdown (CSS + `setInterval`)
+- Package cards with lock/unlock states
 
-### Backend (Lovable Cloud = Supabase)
-- Enable Lovable Cloud
-- Auth: Telegram `initData` HMAC verification via server function
-- Tables (with RLS + GRANTs):
-  - `users` (telegram_id, username, first_name, photo_url, balance, total_earned, today_earned, referred_by, created_at)
-  - `daily_checkins` (user_id, streak_day, claimed_at)
-  - `ads_history` (user_id, reward, watched_at)
-  - `tasks` (id, type, title, reward, target_url, verification_type, active, expires_at)
-  - `task_completions` (user_id, task_id, status, completed_at)
-  - `referrals` (referrer_id, referred_id, bonus_paid, created_at)
-  - `withdrawals` (user_id, amount, wallet_address, status, tx_hash, created_at)
-  - `announcements` (id, title, body, pinned, created_at)
-  - `notifications` (user_id, title, body, read, created_at)
-  - `settings` (key, value) — admin-editable economy config
-  - `user_roles` (user_id, role) — admin role via separate table + `has_role()` security-definer
+## Phase 3 — Welcome / Start Message
 
-### Server functions
-- `verifyTelegramAuth` — validates initData signature, upserts user, returns session
-- `claimDailyCheckin`
-- `claimAdReward` (with cooldown + daily limit)
-- `completeTask` (with verification stub)
-- `requestWithdrawal`
-- `getLeaderboard`
+- Use photo: `https://i.ibb.co/mVcB66gf` (need direct image URL — will use `sendPhoto` with caption)
+- Rich HTML message: features list, earn methods, community + payment channel buttons, mini-app button
+- Applied to both `/start` handler and new-user welcome DM
 
----
+## Phase 4 — Admin Panel additions
 
-## Phase 2 — Verification & Admin
-- Telegram Bot API integration (channel join / bot start verification) via connector
-- AdsGram SDK real integration + reward callback verification
-- Admin panel at `/admin` (role-gated): users, tasks CRUD, withdrawals approve/reject, settings, announcements
-- Notifications system
+- Mining packages CRUD in admin
+- All existing admin tabs already work
 
-## Phase 3 — Anti-abuse & Withdrawals
-- Rate limiting, multi-account detection (device + IP fingerprint)
-- Withdraw approval workflow + CSV export
-- Missions & weekly/monthly challenges
-- Manual USDT payment tracking (auto-payment marked as Future)
+## Phase 5 — Deploy readiness
 
-## Phase 4 — Polish
-- Multi-language (SI/EN)
-- Push notifications via Telegram bot
-- Analytics dashboard with charts
+Stay on Lovable Cloud (recommended). If Vercel needed later, user must create own Supabase project — documented in README.
 
----
+## Technical details
 
-## Tech decisions (already made — no need to ask)
-- **Frontend:** TanStack Start + React + TypeScript + Tailwind v4 (project template)
-- **Backend:** Lovable Cloud (Supabase Postgres + Auth + Storage + Edge functions) — replaces Node/Express + PostgreSQL + separate hosting
-- **Bot API:** Telegram connector via Lovable connector gateway
-- **AdsGram:** Client-side SDK + server-side reward verification
+- Migration: `mining_packages`, `user_mining`, `mining_claims` tables + RLS + GRANTs + seed
+- Server fns: `startMining`, `claimMining`, `getMiningState` in `src/lib/mining.functions.ts`
+- Queries: `miningPackagesQuery`, `userMiningQuery` in `src/lib/queries.ts`
+- Route: `src/routes/app.mining.tsx` + admin `src/routes/admin.mining.tsx`
+- Bot: extend `telegram-bot.server.ts` with `sendWelcomePhoto()` helper
+- Webhook `/start` handler updated in `src/routes/api/public/telegram/webhook.ts`
 
----
-
-## Questions before I start Phase 1
-
-1. **Bot token & AdsGram Block ID** — do you have these ready, or should I build with placeholders and you plug them in later?
-2. **First admin Telegram ID** — give me your Telegram numeric ID so I can seed you as admin.
-3. **Logo** — should I use the uploaded CoinFlames logo as the app logo? (I'll create an asset pointer.)
-
-Reply "go" එකක් දැම්මොත් default assumptions (placeholders + logo yes + admin later) එක්ක Phase 1 පටන් ගන්නම්.
+Approve කරොත් Phase 2 එකේ migration එකෙන් පටන් ගන්නවා.
