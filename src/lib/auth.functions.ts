@@ -175,12 +175,22 @@ export const telegramSignIn = createServerFn({ method: "POST" })
         }
       }
 
-      // Admin notifications
+      // Admin notifications + user welcome
       const name = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(" ") || "—";
       const uname = tgUser.username ? `@${tgUser.username}` : "(no username)";
       await notifyAdmin(
         `🆕 <b>New user joined</b>\nName: ${name}\nUser: ${uname}\nTG ID: <code>${tgUser.id}</code>\nIP: <code>${ip ?? "unknown"}</code>`,
       );
+      if (!ipDuplicate) {
+        const { sendTelegramPhoto } = await import("./telegram-bot.server");
+        const { WELCOME_PHOTO_URL, welcomeCaption, welcomeKeyboard } = await import("./welcome");
+        await sendTelegramPhoto(
+          tgUser.id,
+          WELCOME_PHOTO_URL,
+          welcomeCaption(tgUser.first_name),
+          { reply_markup: welcomeKeyboard() },
+        );
+      }
       if (ipDuplicate) {
         await notifyAdmin(
           `⛔ <b>Account auto-suspended</b>\nReason: duplicate IP\nTG ID: <code>${tgUser.id}</code>\nIP: <code>${ip ?? "unknown"}</code>`,

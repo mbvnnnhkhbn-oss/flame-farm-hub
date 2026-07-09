@@ -92,6 +92,84 @@ export type Database = {
         }
         Relationships: []
       }
+      mining_claims: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          package_id: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          package_id: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          package_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mining_claims_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "mining_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mining_claims_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mining_packages: {
+        Row: {
+          active: boolean
+          ads_required: number
+          cooldown_seconds: number
+          created_at: string
+          daily_claim_limit: number
+          hourly_reward: number
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          ads_required?: number
+          cooldown_seconds?: number
+          created_at?: string
+          daily_claim_limit?: number
+          hourly_reward: number
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          ads_required?: number
+          cooldown_seconds?: number
+          created_at?: string
+          daily_claim_limit?: number
+          hourly_reward?: number
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string
@@ -430,6 +508,63 @@ export type Database = {
           verification_type?: string | null
         }
         Relationships: []
+      }
+      user_mining: {
+        Row: {
+          ads_watched: number
+          claims_date: string
+          claims_today: number
+          created_at: string
+          id: string
+          last_claim_at: string | null
+          next_claim_at: string | null
+          notified_ready: boolean
+          package_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ads_watched?: number
+          claims_date?: string
+          claims_today?: number
+          created_at?: string
+          id?: string
+          last_claim_at?: string | null
+          next_claim_at?: string | null
+          notified_ready?: boolean
+          package_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ads_watched?: number
+          claims_date?: string
+          claims_today?: number
+          created_at?: string
+          id?: string
+          last_claim_at?: string | null
+          next_claim_at?: string | null
+          notified_ready?: boolean
+          package_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_mining_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "mining_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_mining_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

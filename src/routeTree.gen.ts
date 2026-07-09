@@ -18,6 +18,7 @@ import { Route as AppWithdrawRouteImport } from './routes/app.withdraw'
 import { Route as AppTasksRouteImport } from './routes/app.tasks'
 import { Route as AppReferralRouteImport } from './routes/app.referral'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
+import { Route as AppMiningRouteImport } from './routes/app.mining'
 import { Route as AppLeaderboardRouteImport } from './routes/app.leaderboard'
 import { Route as AppHistoryRouteImport } from './routes/app.history'
 import { Route as AppEarnRouteImport } from './routes/app.earn'
@@ -26,6 +27,7 @@ import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminTasksRouteImport } from './routes/admin.tasks'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminRewardCodesRouteImport } from './routes/admin.reward-codes'
+import { Route as AdminMiningRouteImport } from './routes/admin.mining'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
 import { Route as ApiPublicTelegramWebhookRouteImport } from './routes/api/public/telegram/webhook'
 
@@ -74,6 +76,11 @@ const AppProfileRoute = AppProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMiningRoute = AppMiningRouteImport.update({
+  id: '/mining',
+  path: '/mining',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppLeaderboardRoute = AppLeaderboardRouteImport.update({
   id: '/leaderboard',
   path: '/leaderboard',
@@ -114,6 +121,11 @@ const AdminRewardCodesRoute = AdminRewardCodesRouteImport.update({
   path: '/reward-codes',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminMiningRoute = AdminMiningRouteImport.update({
+  id: '/mining',
+  path: '/mining',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAnnouncementsRoute = AdminAnnouncementsRouteImport.update({
   id: '/announcements',
   path: '/announcements',
@@ -131,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/admin/announcements': typeof AdminAnnouncementsRoute
+  '/admin/mining': typeof AdminMiningRoute
   '/admin/reward-codes': typeof AdminRewardCodesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tasks': typeof AdminTasksRoute
@@ -139,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/app/earn': typeof AppEarnRoute
   '/app/history': typeof AppHistoryRoute
   '/app/leaderboard': typeof AppLeaderboardRoute
+  '/app/mining': typeof AppMiningRoute
   '/app/profile': typeof AppProfileRoute
   '/app/referral': typeof AppReferralRoute
   '/app/tasks': typeof AppTasksRoute
@@ -150,6 +164,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
+  '/admin/mining': typeof AdminMiningRoute
   '/admin/reward-codes': typeof AdminRewardCodesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tasks': typeof AdminTasksRoute
@@ -158,6 +173,7 @@ export interface FileRoutesByTo {
   '/app/earn': typeof AppEarnRoute
   '/app/history': typeof AppHistoryRoute
   '/app/leaderboard': typeof AppLeaderboardRoute
+  '/app/mining': typeof AppMiningRoute
   '/app/profile': typeof AppProfileRoute
   '/app/referral': typeof AppReferralRoute
   '/app/tasks': typeof AppTasksRoute
@@ -172,6 +188,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/admin/announcements': typeof AdminAnnouncementsRoute
+  '/admin/mining': typeof AdminMiningRoute
   '/admin/reward-codes': typeof AdminRewardCodesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tasks': typeof AdminTasksRoute
@@ -180,6 +197,7 @@ export interface FileRoutesById {
   '/app/earn': typeof AppEarnRoute
   '/app/history': typeof AppHistoryRoute
   '/app/leaderboard': typeof AppLeaderboardRoute
+  '/app/mining': typeof AppMiningRoute
   '/app/profile': typeof AppProfileRoute
   '/app/referral': typeof AppReferralRoute
   '/app/tasks': typeof AppTasksRoute
@@ -195,6 +213,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/admin/announcements'
+    | '/admin/mining'
     | '/admin/reward-codes'
     | '/admin/settings'
     | '/admin/tasks'
@@ -203,6 +222,7 @@ export interface FileRouteTypes {
     | '/app/earn'
     | '/app/history'
     | '/app/leaderboard'
+    | '/app/mining'
     | '/app/profile'
     | '/app/referral'
     | '/app/tasks'
@@ -214,6 +234,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin/announcements'
+    | '/admin/mining'
     | '/admin/reward-codes'
     | '/admin/settings'
     | '/admin/tasks'
@@ -222,6 +243,7 @@ export interface FileRouteTypes {
     | '/app/earn'
     | '/app/history'
     | '/app/leaderboard'
+    | '/app/mining'
     | '/app/profile'
     | '/app/referral'
     | '/app/tasks'
@@ -235,6 +257,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/admin/announcements'
+    | '/admin/mining'
     | '/admin/reward-codes'
     | '/admin/settings'
     | '/admin/tasks'
@@ -243,6 +266,7 @@ export interface FileRouteTypes {
     | '/app/earn'
     | '/app/history'
     | '/app/leaderboard'
+    | '/app/mining'
     | '/app/profile'
     | '/app/referral'
     | '/app/tasks'
@@ -324,6 +348,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProfileRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/mining': {
+      id: '/app/mining'
+      path: '/mining'
+      fullPath: '/app/mining'
+      preLoaderRoute: typeof AppMiningRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/leaderboard': {
       id: '/app/leaderboard'
       path: '/leaderboard'
@@ -380,6 +411,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRewardCodesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/mining': {
+      id: '/admin/mining'
+      path: '/mining'
+      fullPath: '/admin/mining'
+      preLoaderRoute: typeof AdminMiningRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/announcements': {
       id: '/admin/announcements'
       path: '/announcements'
@@ -399,6 +437,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
+  AdminMiningRoute: typeof AdminMiningRoute
   AdminRewardCodesRoute: typeof AdminRewardCodesRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminTasksRoute: typeof AdminTasksRoute
@@ -409,6 +448,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAnnouncementsRoute: AdminAnnouncementsRoute,
+  AdminMiningRoute: AdminMiningRoute,
   AdminRewardCodesRoute: AdminRewardCodesRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminTasksRoute: AdminTasksRoute,
@@ -423,6 +463,7 @@ interface AppRouteChildren {
   AppEarnRoute: typeof AppEarnRoute
   AppHistoryRoute: typeof AppHistoryRoute
   AppLeaderboardRoute: typeof AppLeaderboardRoute
+  AppMiningRoute: typeof AppMiningRoute
   AppProfileRoute: typeof AppProfileRoute
   AppReferralRoute: typeof AppReferralRoute
   AppTasksRoute: typeof AppTasksRoute
@@ -434,6 +475,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppEarnRoute: AppEarnRoute,
   AppHistoryRoute: AppHistoryRoute,
   AppLeaderboardRoute: AppLeaderboardRoute,
+  AppMiningRoute: AppMiningRoute,
   AppProfileRoute: AppProfileRoute,
   AppReferralRoute: AppReferralRoute,
   AppTasksRoute: AppTasksRoute,
@@ -452,13 +494,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
