@@ -39,22 +39,15 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
         const text = message?.text ?? "";
         if (!chatId || !text.startsWith("/start")) return Response.json({ ok: true, ignored: true });
 
-        const { sendTelegramMessage } = await import("@/lib/telegram-bot.server");
-        await sendTelegramMessage(
-          chatId,
-          `🔥 <b>Welcome to CoinFlames</b>\n\nEarn Flames from ads, daily rewards, tasks and referrals. Join the community and open the mini app to start earning.`,
-          {
-            reply_markup: {
-              inline_keyboard: [
-                [{ text: "Open Mini App", url: "https://t.me/Coinflamesbot/coinflames" }],
-                [
-                  { text: "Community", url: "https://t.me/CoinFlames" },
-                  { text: "Payments", url: "https://t.me/coinflamespayment" },
-                ],
-              ],
-            },
-          },
-        );
+        const { sendTelegramPhoto, sendTelegramMessage } = await import("@/lib/telegram-bot.server");
+        const { WELCOME_PHOTO_URL, welcomeCaption, welcomeKeyboard } = await import("@/lib/welcome");
+        const caption = welcomeCaption(message?.from?.first_name);
+        const kb = welcomeKeyboard();
+        try {
+          await sendTelegramPhoto(chatId, WELCOME_PHOTO_URL, caption, { reply_markup: kb });
+        } catch {
+          await sendTelegramMessage(chatId, caption, { reply_markup: kb });
+        }
         return Response.json({ ok: true });
       },
     },

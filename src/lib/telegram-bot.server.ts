@@ -1,4 +1,34 @@
 // Server-only Telegram Bot API helper.
+export async function sendTelegramPhoto(
+  chatId: number | string,
+  photoUrl: string,
+  caption: string,
+  opts: { reply_markup?: unknown } = {},
+): Promise<void> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return;
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        photo: photoUrl,
+        caption,
+        parse_mode: "HTML",
+        ...(opts.reply_markup ? { reply_markup: opts.reply_markup } : {}),
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      console.error(`[telegram-bot] sendPhoto failed ${res.status}: ${body}`);
+    }
+  } catch (e) {
+    console.error("[telegram-bot] sendPhoto error", e);
+  }
+}
+
+
 export async function sendTelegramMessage(
   chatId: number | string,
   text: string,

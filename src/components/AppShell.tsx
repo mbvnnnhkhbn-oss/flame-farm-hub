@@ -37,7 +37,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="mx-auto max-w-lg px-4 pt-4">{children}</main>
 
       <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-border/60 bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto max-w-lg grid grid-cols-5">
+        <div className="mx-auto max-w-lg grid grid-cols-6">
           {tabs.map((t) => {
             const active = t.exact ? pathname === t.to : pathname.startsWith(t.to);
             const Icon = t.icon;
