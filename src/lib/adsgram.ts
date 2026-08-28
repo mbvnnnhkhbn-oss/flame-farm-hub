@@ -62,6 +62,26 @@ export async function showAd(blockId: string): Promise<ShowPromiseResult> {
   return ctrl.show();
 }
 
+/**
+ * Shows an ad and enforces a minimum watch duration (default 10s).
+ * Throws when the ad was skipped/closed too early.
+ */
+export async function showAdTimed(
+  blockId: string,
+  minSeconds = 10,
+): Promise<{ seconds: number }> {
+  const startedAt = Date.now();
+  const result = await showAd(blockId);
+  const seconds = (Date.now() - startedAt) / 1000;
+  if (!result.done || result.error) {
+    throw new Error("Ad was not completed");
+  }
+  if (seconds < minSeconds) {
+    throw new Error(`Watch the ad for at least ${minSeconds} seconds to earn`);
+  }
+  return { seconds };
+}
+
 export function pickRandomBlockId(
   rewardBlockId?: string | null,
   interstitialBlockId?: string | null,
