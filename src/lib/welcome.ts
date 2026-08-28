@@ -7,14 +7,16 @@ export function welcomeCaption(firstName?: string): string {
     `🔥 <b>Welcome to CoinFlames</b>\n\n` +
     `${hi}Earn <b>Flames 🔥</b> every day and cash out as USDT (BEP20).\n\n` +
     `<b>Ways to earn:</b>\n` +
-    `• 👀 Watch short ads (10 Flames each)\n` +
-    `• ⛏ Mining machines (up to 100 Flames/hr)\n` +
+    `• 👀 AdsGram Reward ads — <b>5 Flames</b> each (10/day)\n` +
+    `• 🎬 AdsGram Int ads — <b>5 Flames</b> each (10/day)\n` +
+    `• ⛏ Mining machines — up to <b>50 Flames/hr</b>, claim hourly\n` +
     `• 🎯 Complete tasks & join channels\n` +
-    `• 🎁 Daily check-in bonuses\n` +
-    `• 🤝 Invite friends — <b>150 Flames</b> per active referral\n` +
+    `• 🎁 Daily check-in bonuses + app-open bonus\n` +
+    `• 🤝 Invite friends — <b>25 + 50 + 75 Flames</b> milestones and <b>5% lifetime commission</b>\n` +
     `• 🎫 Redeem reward codes\n\n` +
     `💵 <b>100 Flames = $0.01 USDT</b>\n` +
-    `💸 Withdraw as low as <b>$1 USDT</b> to your BEP20 wallet.\n\n` +
+    `💸 Minimum withdraw only <b>$0.1 USDT</b> to your BEP20 wallet.\n` +
+    `🧾 All payouts are posted publicly in our Payments channel.\n\n` +
     `Tap <b>Open Mini App</b> to start earning right now.`
   );
 }
