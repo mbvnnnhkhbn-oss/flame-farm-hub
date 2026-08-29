@@ -526,6 +526,78 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
       throw new Error("Insufficient balance");
     }
 
+    // ---- Withdrawal requirements ----
+    const req = await getSetting<{
+      daily_ads_required?: number;
+      referrals_required?: number;
+      all_tasks_required?: boolean;
+      ads_before_submit?: number;
+    }>("withdraw_requirements", {});
+    const adsRequired = Number(req.daily_ads_required ?? 10);
+    const referralsRequired = Number(req.referrals_required ?? 2);
+    const allTasksRequired = req.all_tasks_required !== false;
+    const gateAds = Number(req.ads_before_submit ?? 5);
+
+    const startOfDay = new Date();
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    const sinceHour = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+    const [adsRes, refRes, tasksRes, compRes, pendingRes, gateRes] = await Promise.all([
+      supabaseAdmin
+        .from("ads_history")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .in("provider", ["adsgram", "adsgram_int"])
+        .gte("watched_at", startOfDay.toISOString()),
+      supabaseAdmin
+        .from("referrals")
+        .select("id", { count: "exact", head: true })
+        .eq("referrer_id", userId),
+      supabaseAdmin.from("tasks").select("id").eq("active", true),
+      supabaseAdmin.from("task_completions").select("task_id").eq("user_id", userId),
+      supabaseAdmin
+        .from("withdrawals")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("status", "pending"),
+      supabaseAdmin
+        .from("ads_history")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("provider", "withdraw_gate")
+        .gte("watched_at", sinceHour),
+    ]);
+
+    if ((pendingRes.count ?? 0) > 0) {
+      throw new Error("You already have a pending withdrawal. Wait until it is processed.");
+    }
+    if ((adsRes.count ?? 0) < adsRequired) {
+      throw new Error(`Watch ${adsRequired} ads today before withdrawing`);
+    }
+    if ((refRes.count ?? 0) < referralsRequired) {
+      throw new Error(`Invite ${referralsRequired} friends before withdrawing`);
+    }
+    if (allTasksRequired) {
+      const activeIds = new Set((tasksRes.data ?? []).map((t) => t.id));
+      const done = (compRes.data ?? []).filter((c) => activeIds.has(c.task_id)).length;
+      if (done < activeIds.size) throw new Error("Complete all active tasks before withdrawing");
+    }
+    if ((gateRes.count ?? 0) < gateAds) {
+      throw new Error(`Watch ${gateAds} ads to confirm this withdrawal`);
+    }
+
+    // consume the gate ads so they can't be reused for another request
+    const { data: gateRows } = await supabaseAdmin
+      .from("ads_history")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("provider", "withdraw_gate")
+      .gte("watched_at", sinceHour);
+    for (const row of gateRows ?? []) {
+      await supabaseAdmin.from("ads_history").update({ provider: "withdraw_gate_used" }).eq("id", row.id);
+    }
+
+
     await supabaseAdmin
       .from("profiles")
       .update({ balance: Number(profile.balance) - amountFlames, wallet_address: data.walletAddress })
