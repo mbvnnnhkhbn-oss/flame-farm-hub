@@ -1,5 +1,10 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  adminListTasks,
+  adminListWithdrawals,
+  adminListRewardCodes,
+} from "@/lib/admin.data.functions";
 
 export const adminIsAdminQuery = (userId: string) =>
   queryOptions({
