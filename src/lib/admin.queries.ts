@@ -19,41 +19,13 @@ export const adminIsAdminQuery = (userId: string) =>
 export const adminTasksQuery = () =>
   queryOptions({
     queryKey: ["admin", "tasks"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("tasks")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => adminListTasks(),
   });
 
 export const adminWithdrawalsQuery = (status?: "pending" | "approved" | "rejected") =>
   queryOptions({
     queryKey: ["admin", "withdrawals", status ?? "all"],
-    queryFn: async () => {
-      let q = supabase
-        .from("withdrawals")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (status) q = q.eq("status", status);
-      const { data, error } = await q;
-      if (error) throw error;
-      const rows = data ?? [];
-      const ids = Array.from(new Set(rows.map((r) => r.user_id).filter(Boolean)));
-      let profiles: Record<string, { telegram_id: number | null; username: string | null; first_name: string | null }> = {};
-      if (ids.length) {
-        const { data: profs } = await supabase
-          .from("profiles")
-          .select("id,telegram_id,username,first_name")
-          .in("id", ids);
-        for (const p of profs ?? []) {
-          profiles[p.id] = { telegram_id: p.telegram_id, username: p.username, first_name: p.first_name };
-        }
-      }
-      return rows.map((r) => ({ ...r, profile: profiles[r.user_id] ?? null }));
-    },
+    queryFn: () => adminListWithdrawals({ data: status ? { status } : {} }),
   });
 
 export const adminAnnouncementsQuery = () =>
