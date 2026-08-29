@@ -49,14 +49,7 @@ export const adminAnnouncementsQuery = () =>
 export const adminRewardCodesQuery = () =>
   queryOptions({
     queryKey: ["admin", "reward_codes"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("reward_codes")
-        .select("*, claims:reward_code_claims!reward_code_claims_code_id_fkey(id)")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => adminListRewardCodes(),
   });
 
 export const adminUsersQuery = (search?: string) =>
