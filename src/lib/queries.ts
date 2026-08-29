@@ -1,5 +1,10 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  listTasksForMe,
+  listMyWithdrawals,
+  getWithdrawEligibility,
+} from "@/lib/data.functions";
 
 export const profileQuery = (userId: string) =>
   queryOptions({
