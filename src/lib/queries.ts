@@ -71,21 +71,7 @@ export const announcementsQuery = () =>
 export const tasksQuery = (userId: string) =>
   queryOptions({
     queryKey: ["tasks", userId],
-    queryFn: async () => {
-      const [{ data: tasks, error: te }, { data: comps, error: ce }] = await Promise.all([
-        supabase
-          .from("tasks")
-          .select("*")
-          .eq("active", true)
-          .order("priority", { ascending: false })
-          .order("created_at", { ascending: false }),
-        supabase.from("task_completions").select("task_id,status").eq("user_id", userId),
-      ]);
-      if (te) throw te;
-      if (ce) throw ce;
-      const doneSet = new Set((comps ?? []).map((c) => c.task_id));
-      return (tasks ?? []).map((t) => ({ ...t, completed: doneSet.has(t.id) }));
-    },
+    queryFn: () => listTasksForMe(),
   });
 
 export const adsTodayQuery = (userId: string) =>
