@@ -1,5 +1,10 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  listTasksForMe,
+  listMyWithdrawals,
+  getWithdrawEligibility,
+} from "@/lib/data.functions";
 
 export const profileQuery = (userId: string) =>
   queryOptions({
@@ -71,21 +76,7 @@ export const announcementsQuery = () =>
 export const tasksQuery = (userId: string) =>
   queryOptions({
     queryKey: ["tasks", userId],
-    queryFn: async () => {
-      const [{ data: tasks, error: te }, { data: comps, error: ce }] = await Promise.all([
-        supabase
-          .from("tasks")
-          .select("*")
-          .eq("active", true)
-          .order("priority", { ascending: false })
-          .order("created_at", { ascending: false }),
-        supabase.from("task_completions").select("task_id,status").eq("user_id", userId),
-      ]);
-      if (te) throw te;
-      if (ce) throw ce;
-      const doneSet = new Set((comps ?? []).map((c) => c.task_id));
-      return (tasks ?? []).map((t) => ({ ...t, completed: doneSet.has(t.id) }));
-    },
+    queryFn: () => listTasksForMe(),
   });
 
 export const adsTodayQuery = (userId: string) =>
@@ -123,15 +114,13 @@ export const checkinsQuery = (userId: string) =>
 export const withdrawalsQuery = (userId: string) =>
   queryOptions({
     queryKey: ["withdrawals", userId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("withdrawals")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => listMyWithdrawals(),
+  });
+
+export const withdrawEligibilityQuery = (userId: string) =>
+  queryOptions({
+    queryKey: ["withdraw_eligibility", userId],
+    queryFn: () => getWithdrawEligibility(),
   });
 
 export const referralsQuery = (userId: string) =>

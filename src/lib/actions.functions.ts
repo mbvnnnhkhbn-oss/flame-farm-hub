@@ -106,24 +106,51 @@ export const claimDailyCheckin = createServerFn({ method: "POST" })
 export const claimAdReward = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z.object({ blockId: z.string().optional() }).optional().parse(data ?? {}),
+    z
+      .object({
+        blockId: z.string().optional(),
+        kind: z.enum(["reward", "interstitial"]).default("reward"),
+        watchedSeconds: z.number().min(0).optional(),
+      })
+      .optional()
+      .parse(data ?? {}),
   )
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const userId = context.userId;
+    const kind = data?.kind ?? "reward";
+    const provider = kind === "interstitial" ? "adsgram_int" : "adsgram";
 
     const cfg = await getSetting<{
       reward_per_ad: number;
       daily_limit: number;
       cooldown_seconds: number;
+      reward_per_interstitial?: number;
+      interstitial_daily_limit?: number;
+      watch_seconds?: number;
       block_id_reward?: string;
       block_id_interstitial?: string;
-    }>("ads", { reward_per_ad: 10, daily_limit: 10, cooldown_seconds: 10 });
+    }>("ads", { reward_per_ad: 5, daily_limit: 10, cooldown_seconds: 10 });
+
+    const minWatch = Number(cfg.watch_seconds ?? 10);
+    if (typeof data?.watchedSeconds === "number" && data.watchedSeconds < minWatch) {
+      throw new Error(`Watch the ad for at least ${minWatch} seconds to earn`);
+    }
+
+    const reward =
+      kind === "interstitial"
+        ? Number(cfg.reward_per_interstitial ?? 5)
+        : Number(cfg.reward_per_ad ?? 5);
+    const dailyLimit =
+      kind === "interstitial"
+        ? Number(cfg.interstitial_daily_limit ?? 10)
+        : Number(cfg.daily_limit ?? 10);
 
     const { data: last } = await supabaseAdmin
       .from("ads_history")
       .select("watched_at")
       .eq("user_id", userId)
+      .eq("provider", provider)
       .order("watched_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -140,17 +167,43 @@ export const claimAdReward = createServerFn({ method: "POST" })
       .from("ads_history")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
+      .eq("provider", provider)
       .gte("watched_at", startOfDay.toISOString());
-    if ((count ?? 0) >= cfg.daily_limit) {
+    if ((count ?? 0) >= dailyLimit) {
       throw new Error("Daily ad limit reached. Come back tomorrow!");
     }
 
+    await supabaseAdmin.from("ads_history").insert({ user_id: userId, reward, provider });
+    await addBalance(userId, reward);
+    await checkReferralAdMilestones(userId);
+    return { reward, kind, blockId: data?.blockId ?? null };
+  });
+
+/** Records one of the ads a user must watch before submitting a withdrawal. */
+export const recordWithdrawGateAd = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ watchedSeconds: z.number().min(0) }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const cfg = await getSetting<{ watch_seconds?: number }>("ads", {});
+    const minWatch = Number(cfg.watch_seconds ?? 10);
+    if (data.watchedSeconds < minWatch) {
+      throw new Error(`Watch the ad for at least ${minWatch} seconds`);
+    }
     await supabaseAdmin
       .from("ads_history")
-      .insert({ user_id: userId, reward: cfg.reward_per_ad });
-    await addBalance(userId, cfg.reward_per_ad);
-    await checkReferralAdMilestones(userId);
-    return { reward: cfg.reward_per_ad, blockId: data?.blockId ?? null };
+      .insert({ user_id: context.userId, reward: 0, provider: "withdraw_gate" });
+
+    const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count } = await supabaseAdmin
+      .from("ads_history")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", context.userId)
+      .eq("provider", "withdraw_gate")
+      .gte("watched_at", since);
+    return { watched: count ?? 0 };
   });
 
 async function checkReferralAdMilestones(referredUserId: string) {
@@ -472,6 +525,78 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
     if (Number(profile.balance) < amountFlames) {
       throw new Error("Insufficient balance");
     }
+
+    // ---- Withdrawal requirements ----
+    const req = await getSetting<{
+      daily_ads_required?: number;
+      referrals_required?: number;
+      all_tasks_required?: boolean;
+      ads_before_submit?: number;
+    }>("withdraw_requirements", {});
+    const adsRequired = Number(req.daily_ads_required ?? 10);
+    const referralsRequired = Number(req.referrals_required ?? 2);
+    const allTasksRequired = req.all_tasks_required !== false;
+    const gateAds = Number(req.ads_before_submit ?? 5);
+
+    const startOfDay = new Date();
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    const sinceHour = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+    const [adsRes, refRes, tasksRes, compRes, pendingRes, gateRes] = await Promise.all([
+      supabaseAdmin
+        .from("ads_history")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .in("provider", ["adsgram", "adsgram_int"])
+        .gte("watched_at", startOfDay.toISOString()),
+      supabaseAdmin
+        .from("referrals")
+        .select("id", { count: "exact", head: true })
+        .eq("referrer_id", userId),
+      supabaseAdmin.from("tasks").select("id").eq("active", true),
+      supabaseAdmin.from("task_completions").select("task_id").eq("user_id", userId),
+      supabaseAdmin
+        .from("withdrawals")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("status", "pending"),
+      supabaseAdmin
+        .from("ads_history")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("provider", "withdraw_gate")
+        .gte("watched_at", sinceHour),
+    ]);
+
+    if ((pendingRes.count ?? 0) > 0) {
+      throw new Error("You already have a pending withdrawal. Wait until it is processed.");
+    }
+    if ((adsRes.count ?? 0) < adsRequired) {
+      throw new Error(`Watch ${adsRequired} ads today before withdrawing`);
+    }
+    if ((refRes.count ?? 0) < referralsRequired) {
+      throw new Error(`Invite ${referralsRequired} friends before withdrawing`);
+    }
+    if (allTasksRequired) {
+      const activeIds = new Set((tasksRes.data ?? []).map((t) => t.id));
+      const done = (compRes.data ?? []).filter((c) => activeIds.has(c.task_id)).length;
+      if (done < activeIds.size) throw new Error("Complete all active tasks before withdrawing");
+    }
+    if ((gateRes.count ?? 0) < gateAds) {
+      throw new Error(`Watch ${gateAds} ads to confirm this withdrawal`);
+    }
+
+    // consume the gate ads so they can't be reused for another request
+    const { data: gateRows } = await supabaseAdmin
+      .from("ads_history")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("provider", "withdraw_gate")
+      .gte("watched_at", sinceHour);
+    for (const row of gateRows ?? []) {
+      await supabaseAdmin.from("ads_history").update({ provider: "withdraw_gate_used" }).eq("id", row.id);
+    }
+
 
     await supabaseAdmin
       .from("profiles")
