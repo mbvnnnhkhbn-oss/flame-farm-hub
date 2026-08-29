@@ -77,6 +77,7 @@ export const getWithdrawEligibility = createServerFn({ method: "GET" })
         .from("ads_history")
         .select("id", { count: "exact", head: true })
         .eq("user_id", userId)
+        .in("provider", ["adsgram", "adsgram_int"])
         .gte("watched_at", startOfDay.toISOString()),
       supabaseAdmin
         .from("referrals")
