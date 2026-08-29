@@ -109,15 +109,13 @@ export const checkinsQuery = (userId: string) =>
 export const withdrawalsQuery = (userId: string) =>
   queryOptions({
     queryKey: ["withdrawals", userId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("withdrawals")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => listMyWithdrawals(),
+  });
+
+export const withdrawEligibilityQuery = (userId: string) =>
+  queryOptions({
+    queryKey: ["withdraw_eligibility", userId],
+    queryFn: () => getWithdrawEligibility(),
   });
 
 export const referralsQuery = (userId: string) =>
