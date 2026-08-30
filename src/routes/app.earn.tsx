@@ -40,7 +40,9 @@ function EarnPage() {
   });
 
   const cfg = settings.data?.ads;
-  const rows = adsToday.data ?? [];
+  const rows = (adsToday.data ?? []).filter(
+    (a) => (a.provider ?? "adsgram") === "adsgram" || a.provider === "adsgram_int",
+  );
   const rewardWatched = rows.filter((a) => (a.provider ?? "adsgram") === "adsgram").length;
   const intWatched = rows.filter((a) => a.provider === "adsgram_int").length;
 
