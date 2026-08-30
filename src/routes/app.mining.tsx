@@ -52,17 +52,14 @@ function MiningPage() {
   const intBlock = settings.data?.ads?.block_id_interstitial;
 
   async function watchAdFor(packageId: string) {
-    const { pickRandomBlockId, showAd } = await import("@/lib/adsgram");
+    const { pickRandomBlockId, showAdTimed } = await import("@/lib/adsgram");
     const blockId = pickRandomBlockId(rewardBlock, intBlock);
+    const minWatch = Number(settings.data?.ads?.watch_seconds ?? 10);
     if (blockId) {
       try {
         toast.loading("Loading ad…", { id: "mad" });
-        const result = await showAd(blockId);
+        await showAdTimed(blockId, minWatch);
         toast.dismiss("mad");
-        if (!result.done || result.error) {
-          toast.error("Ad not completed");
-          return;
-        }
       } catch (e) {
         toast.dismiss("mad");
         toast.error(e instanceof Error ? e.message : "Ad failed");
@@ -70,7 +67,7 @@ function MiningPage() {
       }
     } else {
       toast.loading("Loading ad…", { id: "mad" });
-      await new Promise((r) => setTimeout(r, 1200));
+      await new Promise((r) => setTimeout(r, minWatch * 1000));
       toast.dismiss("mad");
     }
     recordMut.mutate(packageId);

@@ -92,10 +92,6 @@ function WithdrawPage() {
       let seconds = minWatch;
       if (blockId) {
         const res = await showAdTimed(blockId, minWatch);
-        if (!res.ok) {
-          toast.error(res.message ?? "Ad not completed");
-          return;
-        }
         seconds = res.seconds;
       } else {
         await new Promise((r) => setTimeout(r, minWatch * 1000));

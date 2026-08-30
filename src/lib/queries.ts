@@ -38,8 +38,11 @@ export const settingsQuery = () =>
           cooldown_seconds: number;
           block_id_reward?: string;
           block_id_interstitial?: string;
+          watch_seconds?: number;
           watch_seconds_reward?: number;
           watch_seconds_interstitial?: number;
+          reward_per_interstitial?: number;
+          interstitial_daily_limit?: number;
         };
         daily_rewards: Record<string, number>;
         referral: {
@@ -87,7 +90,7 @@ export const adsTodayQuery = (userId: string) =>
       startOfDay.setUTCHours(0, 0, 0, 0);
       const { data, error } = await supabase
         .from("ads_history")
-        .select("id,watched_at,reward")
+        .select("id,watched_at,reward,provider")
         .eq("user_id", userId)
         .gte("watched_at", startOfDay.toISOString())
         .order("watched_at", { ascending: false });
