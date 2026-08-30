@@ -38,8 +38,11 @@ export const settingsQuery = () =>
           cooldown_seconds: number;
           block_id_reward?: string;
           block_id_interstitial?: string;
+          watch_seconds?: number;
           watch_seconds_reward?: number;
           watch_seconds_interstitial?: number;
+          reward_per_interstitial?: number;
+          interstitial_daily_limit?: number;
         };
         daily_rewards: Record<string, number>;
         referral: {
