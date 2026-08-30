@@ -90,7 +90,7 @@ export const adsTodayQuery = (userId: string) =>
       startOfDay.setUTCHours(0, 0, 0, 0);
       const { data, error } = await supabase
         .from("ads_history")
-        .select("id,watched_at,reward")
+        .select("id,watched_at,reward,provider")
         .eq("user_id", userId)
         .gte("watched_at", startOfDay.toISOString())
         .order("watched_at", { ascending: false });
