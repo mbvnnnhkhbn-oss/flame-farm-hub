@@ -146,14 +146,8 @@ function TasksPage() {
                 </div>
               )}
             </div>
-          </div>
-        ))}
-        {tasks.data && tasks.data.length === 0 && (
-          <div className="rounded-2xl border border-border/60 bg-card/40 p-8 text-center text-sm text-muted-foreground">
-            No active tasks right now. Check back soon!
-          </div>
-        )}
       </div>
-    </div>
-  );
+    );
+  }
 }
+
