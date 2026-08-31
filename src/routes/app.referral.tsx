@@ -181,9 +181,30 @@ function ReferralPage() {
                 className="rounded-xl border border-border/40 bg-card/40 px-3 py-2.5 text-xs"
               >
                 <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-muted-foreground">
-                    <TrendingUp className="h-3 w-3" />
-                    {new Date(r.created_at).toLocaleDateString()}
+                  <span className="flex min-w-0 items-center gap-2">
+                    {r.referred?.photo_url ? (
+                      <img
+                        src={r.referred.photo_url}
+                        alt=""
+                        loading="lazy"
+                        className="h-6 w-6 shrink-0 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-secondary/60 text-[10px] font-bold">
+                        {(r.referred?.first_name ?? "?").slice(0, 1).toUpperCase()}
+                      </span>
+                    )}
+                    <span className="min-w-0">
+                      <span className="block truncate font-semibold text-foreground">
+                        {r.referred?.username
+                          ? `@${r.referred.username}`
+                          : (r.referred?.first_name ?? "CoinFlames user")}
+                      </span>
+                      <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <TrendingUp className="h-3 w-3" />
+                        {new Date(r.created_at).toLocaleDateString()}
+                      </span>
+                    </span>
                   </span>
                   <span className="rounded-full bg-success/20 px-2 py-0.5 font-bold text-success">
                     +{formatFlames(
@@ -193,6 +214,7 @@ function ReferralPage() {
                     )}
                   </span>
                 </div>
+
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   <Milestone
                     label={`Join +${r.join_bonus ?? joinBonus}`}

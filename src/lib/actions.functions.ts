@@ -638,3 +638,48 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
 
     return { id: wd.id, fee, netUsdt };
   });
+
+/**
+ * "View Site" reward — the user opens one of the configured links and must stay
+ * for the minimum watch time before the reward is credited. Daily counters
+ * reset at 00:00:00 UTC.
+ */
+export const claimViewSiteReward = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ watchedSeconds: z.number().min(0), url: z.string().url().optional() }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const userId = context.userId;
+
+    const cfg = await getSetting<{
+      daily_limit?: number;
+      reward?: number;
+      watch_seconds?: number;
+      links?: string[];
+    }>("view_site", {});
+    const minWatch = Number(cfg.watch_seconds ?? 10);
+    const reward = Number(cfg.reward ?? 3);
+    const dailyLimit = Number(cfg.daily_limit ?? 10);
+
+    if (data.watchedSeconds < minWatch) {
+      throw new Error(`Stay on the site for at least ${minWatch} seconds to earn`);
+    }
+
+    const startOfDay = new Date();
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    const { count } = await supabaseAdmin
+      .from("ads_history")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("provider", "viewsite")
+      .gte("watched_at", startOfDay.toISOString());
+    if ((count ?? 0) >= dailyLimit) {
+      throw new Error("Daily View Site limit reached. Come back after 00:00 UTC!");
+    }
+
+    await supabaseAdmin.from("ads_history").insert({ user_id: userId, reward, provider: "viewsite" });
+    await addBalance(userId, reward);
+    return { reward };
+  });

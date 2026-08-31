@@ -2,15 +2,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { PlayCircle, Flame, Timer } from "lucide-react";
+import { PlayCircle, Flame, Timer, Globe } from "lucide-react";
 
 import { useCurrentUserId } from "@/hooks/use-current-user";
 import { adsTodayQuery, settingsQuery } from "@/lib/queries";
-import { claimAdReward } from "@/lib/actions.functions";
+import { claimAdReward, claimViewSiteReward } from "@/lib/actions.functions";
 import { formatFlames } from "@/lib/format";
 import { haptic } from "@/lib/telegram";
 import adRewardIcon from "@/assets/ad-reward.png";
 import adIntIcon from "@/assets/ad-interstitial.png";
+
 
 export const Route = createFileRoute("/app/earn")({
   component: EarnPage,
@@ -40,17 +41,62 @@ function EarnPage() {
   });
 
   const cfg = settings.data?.ads;
+  const siteCfg = settings.data?.view_site;
   const rows = (adsToday.data ?? []).filter(
-    (a) => (a.provider ?? "adsgram") === "adsgram" || a.provider === "adsgram_int",
+    (a) =>
+      (a.provider ?? "adsgram") === "adsgram" ||
+      a.provider === "adsgram_int" ||
+      a.provider === "viewsite",
   );
   const rewardWatched = rows.filter((a) => (a.provider ?? "adsgram") === "adsgram").length;
   const intWatched = rows.filter((a) => a.provider === "adsgram_int").length;
+  const siteWatched = rows.filter((a) => a.provider === "viewsite").length;
 
   const rewardLimit = cfg?.daily_limit ?? 10;
   const intLimit = cfg?.interstitial_daily_limit ?? 10;
   const rewardValue = cfg?.reward_per_ad ?? 5;
   const intValue = cfg?.reward_per_interstitial ?? 5;
   const minWatch = Number(cfg?.watch_seconds ?? 10);
+
+  const siteLinks = siteCfg?.links ?? [
+    "https://omg10.com/4/10176898",
+    "https://omg10.com/4/10339385",
+  ];
+  const siteLimit = Number(siteCfg?.daily_limit ?? 10);
+  const siteValue = Number(siteCfg?.reward ?? 3);
+  const siteMinWatch = Number(siteCfg?.watch_seconds ?? 10);
+
+  const siteFn = useServerFn(claimViewSiteReward);
+  const siteMut = useMutation({
+    mutationFn: (p: { watchedSeconds: number; url: string }) => siteFn({ data: p }),
+    onSuccess: (res) => {
+      haptic("heavy");
+      toast.success(`+${formatFlames(res.reward)} coins — thanks for visiting!`);
+      qc.invalidateQueries({ queryKey: ["ads_today", userId] });
+      qc.invalidateQueries({ queryKey: ["profile", userId] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  async function viewSite() {
+    if (siteLinks.length === 0) {
+      toast.error("No links configured — try again later");
+      return;
+    }
+    const url = siteLinks[Math.floor(Math.random() * siteLinks.length)];
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    if (!win) {
+      toast.error("Could not open the site — try again");
+      return;
+    }
+    haptic("light");
+    toast.loading(`Stay on the site for ${siteMinWatch}s…`, { id: "site" });
+    const startedAt = Date.now();
+    await new Promise((r) => setTimeout(r, siteMinWatch * 1000));
+    toast.dismiss("site");
+    siteMut.mutate({ watchedSeconds: (Date.now() - startedAt) / 1000, url });
+  }
+
 
   async function watchAd(kind: AdKind) {
     const { normalizeRewardBlockId, normalizeInterstitialBlockId, showAdTimed } = await import(

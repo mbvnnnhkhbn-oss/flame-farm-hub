@@ -464,6 +464,7 @@ export type Database = {
       tasks: {
         Row: {
           active: boolean
+          category: string
           created_at: string
           description: string | null
           expires_at: string | null
@@ -479,6 +480,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          category?: string
           created_at?: string
           description?: string | null
           expires_at?: string | null
@@ -494,6 +496,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          category?: string
           created_at?: string
           description?: string | null
           expires_at?: string | null

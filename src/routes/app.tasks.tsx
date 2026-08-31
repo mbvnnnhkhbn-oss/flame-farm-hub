@@ -42,6 +42,28 @@ function TasksPage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
+  const all = tasks.data ?? [];
+  const groups: { key: string; label: string; hint: string; rows: typeof all }[] = [
+    {
+      key: "main",
+      label: "Main Tasks",
+      hint: "Required for withdrawals",
+      rows: all.filter((t) => (t.category ?? "other") === "main"),
+    },
+    {
+      key: "partner",
+      label: "Partner Tasks",
+      hint: "From our partners",
+      rows: all.filter((t) => (t.category ?? "other") === "partner"),
+    },
+    {
+      key: "other",
+      label: "Other Tasks",
+      hint: "Extra ways to earn",
+      rows: all.filter((t) => (t.category ?? "other") === "other"),
+    },
+  ];
+
   return (
     <div className="space-y-4">
       <header className="flex items-center gap-3 pt-2">
@@ -54,8 +76,31 @@ function TasksPage() {
         </div>
       </header>
 
-      <div className="space-y-2">
-        {(tasks.data ?? []).map((t) => (
+      {groups
+        .filter((g) => g.rows.length > 0)
+        .map((g) => (
+          <section key={g.key}>
+            <div className="mb-2 flex items-baseline justify-between px-1">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {g.label}
+              </h2>
+              <span className="text-[10px] text-muted-foreground">{g.hint}</span>
+            </div>
+            <div className="space-y-2">{g.rows.map((t) => renderTask(t))}</div>
+          </section>
+        ))}
+
+      {all.length === 0 && (
+        <div className="rounded-2xl border border-border/60 bg-card/40 p-8 text-center text-sm text-muted-foreground">
+          No active tasks right now. Check back soon!
+        </div>
+      )}
+    </div>
+  );
+
+  function renderTask(t: (typeof all)[number]) {
+    return (
+
           <div
             key={t.id}
             className="rounded-2xl border border-border/60 bg-card/60 p-4 backdrop-blur"
@@ -101,14 +146,8 @@ function TasksPage() {
                 </div>
               )}
             </div>
-          </div>
-        ))}
-        {tasks.data && tasks.data.length === 0 && (
-          <div className="rounded-2xl border border-border/60 bg-card/40 p-8 text-center text-sm text-muted-foreground">
-            No active tasks right now. Check back soon!
-          </div>
-        )}
       </div>
-    </div>
-  );
+    );
+  }
 }
+

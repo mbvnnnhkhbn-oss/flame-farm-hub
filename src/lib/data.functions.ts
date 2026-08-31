@@ -123,3 +123,40 @@ export const getWithdrawEligibility = createServerFn({ method: "GET" })
       walletAddress: profile.data?.wallet_address ?? null,
     };
   });
+
+/**
+ * Referral list for the signed-in user, joined to the referred user's profile.
+ * Uses the admin client because `referrals.referred_id` points at auth.users
+ * and cannot be embedded through the Data API.
+ */
+export const listMyReferrals = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows } = await supabaseAdmin
+      .from("referrals")
+      .select("*")
+      .eq("referrer_id", context.userId)
+      .order("created_at", { ascending: false });
+
+    const ids = Array.from(new Set((rows ?? []).map((r) => r.referred_id).filter(Boolean)));
+    const profiles = new Map<
+      string,
+      { username: string | null; first_name: string | null; photo_url: string | null; total_earned: number }
+    >();
+    if (ids.length) {
+      const { data: profs } = await supabaseAdmin
+        .from("profiles")
+        .select("id,username,first_name,photo_url,total_earned")
+        .in("id", ids);
+      for (const p of profs ?? []) {
+        profiles.set(p.id, {
+          username: p.username,
+          first_name: p.first_name,
+          photo_url: p.photo_url,
+          total_earned: Number(p.total_earned ?? 0),
+        });
+      }
+    }
+    return (rows ?? []).map((r) => ({ ...r, referred: profiles.get(r.referred_id) ?? null }));
+  });

@@ -4,7 +4,9 @@ import {
   listTasksForMe,
   listMyWithdrawals,
   getWithdrawEligibility,
+  listMyReferrals,
 } from "@/lib/data.functions";
+
 
 export const profileQuery = (userId: string) =>
   queryOptions({
@@ -56,7 +58,9 @@ export const settingsQuery = () =>
         };
         app: { bot_username: string; start_app_name?: string; support_url: string; admin_chat_id?: string; community_url?: string; payment_channel_url?: string; payment_channel_chat_id?: string };
         open_bonus?: { min: number; max: number; cooldown_hours: number };
+        view_site?: { daily_limit?: number; reward?: number; watch_seconds?: number; links?: string[] };
       };
+
     },
   });
 
@@ -129,16 +133,9 @@ export const withdrawEligibilityQuery = (userId: string) =>
 export const referralsQuery = (userId: string) =>
   queryOptions({
     queryKey: ["referrals", userId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("referrals")
-        .select("*, referred:referred_id(profiles(*))")
-        .eq("referrer_id", userId)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => listMyReferrals(),
   });
+
 
 export const leaderboardQuery = () =>
   queryOptions({

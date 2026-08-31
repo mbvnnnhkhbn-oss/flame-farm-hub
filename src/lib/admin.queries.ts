@@ -4,7 +4,10 @@ import {
   adminListTasks,
   adminListWithdrawals,
   adminListRewardCodes,
+  adminListUsers,
+  adminUserActivity,
 } from "@/lib/admin.data.functions";
+
 
 export const adminIsAdminQuery = (userId: string) =>
   queryOptions({
@@ -52,25 +55,18 @@ export const adminRewardCodesQuery = () =>
     queryFn: () => adminListRewardCodes(),
   });
 
-export const adminUsersQuery = (search?: string) =>
+export const adminUsersQuery = (search?: string, sort: "balance" | "earned" | "recent" = "balance") =>
   queryOptions({
-    queryKey: ["admin", "users", search ?? ""],
-    queryFn: async () => {
-      let q = supabase
-        .from("profiles")
-        .select("id,telegram_id,username,first_name,balance,total_earned,banned,suspended,suspend_reason,created_at")
-        .order("created_at", { ascending: false })
-        .limit(100);
-      if (search && search.trim()) {
-        const s = search.trim();
-        if (/^\d+$/.test(s)) q = q.eq("telegram_id", Number(s));
-        else q = q.ilike("username", `%${s}%`);
-      }
-      const { data, error } = await q;
-      if (error) throw error;
-      return data;
-    },
+    queryKey: ["admin", "users", search ?? "", sort],
+    queryFn: () => adminListUsers({ data: { search: search ?? undefined, sort } }),
   });
+
+export const adminUserActivityQuery = (userId: string) =>
+  queryOptions({
+    queryKey: ["admin", "user_activity", userId],
+    queryFn: () => adminUserActivity({ data: { userId } }),
+  });
+
 
 export const adminAllSettingsQuery = () =>
   queryOptions({
