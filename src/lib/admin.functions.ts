@@ -104,7 +104,9 @@ const taskInput = z.object({
   priority: z.number().int().default(0),
   active: z.boolean().default(true),
   expires_at: z.string().nullish(),
+  category: z.enum(["main", "partner", "other"]).default("other"),
 });
+
 
 export const upsertTask = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
