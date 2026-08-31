@@ -53,6 +53,7 @@ function AdminTasks() {
           verification_type: (payload.verification_type as never) ?? "manual",
           priority: Number(payload.priority ?? 0),
           active: payload.active ?? true,
+          category: ((payload.category as never) ?? "other"),
         },
       }),
     onSuccess: () => {
@@ -79,7 +80,7 @@ function AdminTasks() {
           <p className="text-xs text-muted-foreground">{tasks.data?.length ?? 0} total</p>
         </div>
         <button
-          onClick={() => setEditing({ active: true, verification_type: "manual", type: "website", reward: 1000 })}
+          onClick={() => setEditing({ active: true, verification_type: "manual", type: "website", reward: 1000, category: "other" })}
           className="inline-flex items-center gap-1 rounded-full bg-gradient-flame px-4 py-2 text-xs font-bold text-primary-foreground shadow-flame"
         >
           <Plus className="h-3.5 w-3.5" /> New Task
@@ -101,6 +102,9 @@ function AdminTasks() {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <span className={`inline-flex h-1.5 w-1.5 rounded-full ${t.active ? "bg-emerald-400" : "bg-muted-foreground"}`} />
+                <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary">
+                  {t.category ?? "other"}
+                </span>
                 <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{t.type}</span>
                 <span className="text-xs text-primary">+{Number(t.reward).toLocaleString()} 🔥</span>
               </div>
@@ -163,6 +167,17 @@ function TaskForm({
           >
             {TYPES.map((t) => (
               <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Section">
+          <select
+            className="w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm"
+            value={v.category ?? "other"}
+            onChange={(e) => setV({ ...v, category: e.target.value })}
+          >
+            {CATEGORIES.map((c) => (
+              <option key={c} value={c}>{c}</option>
             ))}
           </select>
         </Field>
