@@ -2,15 +2,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { PlayCircle, Flame, Timer } from "lucide-react";
+import { PlayCircle, Flame, Timer, Globe } from "lucide-react";
 
 import { useCurrentUserId } from "@/hooks/use-current-user";
 import { adsTodayQuery, settingsQuery } from "@/lib/queries";
-import { claimAdReward } from "@/lib/actions.functions";
+import { claimAdReward, claimViewSiteReward } from "@/lib/actions.functions";
 import { formatFlames } from "@/lib/format";
 import { haptic } from "@/lib/telegram";
 import adRewardIcon from "@/assets/ad-reward.png";
 import adIntIcon from "@/assets/ad-interstitial.png";
+
 
 export const Route = createFileRoute("/app/earn")({
   component: EarnPage,
