@@ -58,7 +58,9 @@ export const settingsQuery = () =>
         };
         app: { bot_username: string; start_app_name?: string; support_url: string; admin_chat_id?: string; community_url?: string; payment_channel_url?: string; payment_channel_chat_id?: string };
         open_bonus?: { min: number; max: number; cooldown_hours: number };
+        view_site?: { daily_limit?: number; reward?: number; watch_seconds?: number; links?: string[] };
       };
+
     },
   });
 
