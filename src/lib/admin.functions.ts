@@ -429,3 +429,100 @@ export const deleteRewardCode = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/** Suspend / un-suspend a user, with an optional reason. */
+export const setUserSuspend = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        userId: z.string().uuid(),
+        suspended: z.boolean(),
+        reason: z.string().max(300).nullish(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({
+        suspended: data.suspended,
+        banned: data.suspended,
+        suspend_reason: data.suspended ? (data.reason ?? null) : null,
+      })
+      .eq("id", data.userId);
+    if (error) throw new Error(error.message);
+
+    const { sendUserBotMessage, notifyAdmin } = await import("@/lib/telegram-bot.server");
+    if (data.suspended) {
+      await sendUserBotMessage(
+        data.userId,
+        `⛔ <b>Your account has been suspended</b>${data.reason ? `\nReason: ${data.reason}` : ""}\n\nContact support if you think this is a mistake.`,
+      );
+      await notifyAdmin(`⛔ <b>Account suspended</b>\nUser id: <code>${data.userId}</code>${data.reason ? `\nReason: ${data.reason}` : ""}`);
+    } else {
+      await sendUserBotMessage(
+        data.userId,
+        "✅ <b>Your account has been restored</b>\nYou can keep earning again — open the app.",
+      );
+    }
+    return { ok: true };
+  });
+
+/**
+ * Broadcast a message to every non-suspended bot user. Supports an optional
+ * image and up to three inline buttons.
+ */
+export const broadcastToUsers = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        title: z.string().min(1).max(160),
+        body: z.string().min(1).max(3000),
+        imageUrl: z.string().url().nullish(),
+        buttons: z
+          .array(z.object({ text: z.string().min(1).max(40), url: z.string().url() }))
+          .max(3)
+          .default([]),
+        alsoInApp: z.boolean().default(true),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { sendTelegramMessage, sendTelegramPhoto } = await import("@/lib/telegram-bot.server");
+
+    if (data.alsoInApp) {
+      await supabaseAdmin
+        .from("notifications")
+        .insert({ user_id: null, title: data.title, body: data.body });
+    }
+
+    const { data: users } = await supabaseAdmin
+      .from("profiles")
+      .select("telegram_id")
+      .eq("suspended", false)
+      .not("telegram_id", "is", null);
+
+    const text = `📣 <b>${data.title}</b>\n\n${data.body}`;
+    const reply_markup =
+      data.buttons.length > 0
+        ? { inline_keyboard: [data.buttons.map((b) => ({ text: b.text, url: b.url }))] }
+        : undefined;
+
+    let sent = 0;
+    for (const u of users ?? []) {
+      if (!u.telegram_id) continue;
+      if (data.imageUrl) {
+        await sendTelegramPhoto(u.telegram_id, data.imageUrl, text, { reply_markup });
+      } else {
+        await sendTelegramMessage(u.telegram_id, text, { reply_markup });
+      }
+      sent += 1;
+    }
+    return { sent };
+  });
