@@ -22,11 +22,15 @@ type TaskRow = {
   verification_type: string | null;
   priority: number | null;
   active: boolean;
+  category?: string | null;
 };
 
 const TYPES = [
   "telegram_join","telegram_group","bot_start","website","social_follow","youtube","quiz","survey","app_download",
 ];
+
+const CATEGORIES = ["main", "partner", "other"] as const;
+
 
 function AdminTasks() {
   const qc = useQueryClient();
