@@ -133,16 +133,9 @@ export const withdrawEligibilityQuery = (userId: string) =>
 export const referralsQuery = (userId: string) =>
   queryOptions({
     queryKey: ["referrals", userId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("referrals")
-        .select("*, referred:referred_id(profiles(*))")
-        .eq("referrer_id", userId)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => listMyReferrals(),
   });
+
 
 export const leaderboardQuery = () =>
   queryOptions({
