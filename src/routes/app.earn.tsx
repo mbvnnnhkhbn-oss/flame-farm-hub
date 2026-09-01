@@ -107,24 +107,23 @@ function EarnPage() {
         ? normalizeRewardBlockId(cfg?.block_id_reward)
         : normalizeInterstitialBlockId(cfg?.block_id_interstitial);
 
+    if (!blockId) {
+      toast.error("No ad available right now — try again");
+      return;
+    }
     let seconds = minWatch;
-    if (blockId) {
-      try {
-        toast.loading("Loading ad…", { id: "ad" });
-        const res = await showAdTimed(blockId, minWatch);
-        seconds = res.seconds;
-        toast.dismiss("ad");
-      } catch (e) {
-        toast.dismiss("ad");
-        toast.error(e instanceof Error ? e.message : "Ad failed to load");
-        return;
-      }
-    } else {
+    try {
       toast.loading("Loading ad…", { id: "ad" });
-      await new Promise((r) => setTimeout(r, minWatch * 1000));
+      const res = await showAdTimed(blockId, minWatch);
+      seconds = res.seconds;
       toast.dismiss("ad");
+    } catch (e) {
+      toast.dismiss("ad");
+      toast.error(e instanceof Error ? e.message : "No ad available — try again");
+      return;
     }
     claimMut.mutate({ blockId, kind, watchedSeconds: seconds });
+
   }
 
   return (
@@ -165,6 +164,52 @@ function EarnPage() {
         onWatch={() => watchAd("interstitial")}
       />
 
+      <div className="rounded-3xl bg-gradient-card border border-accent/25 p-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-secondary/50">
+            <Globe className="h-7 w-7 text-accent" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-base font-black">View Site</div>
+            <div className="text-[11px] text-muted-foreground">
+              Open a sponsored site for {siteMinWatch}s
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-xl font-black text-gradient-gold">+{formatFlames(siteValue)}</div>
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">per view</div>
+          </div>
+        </div>
+
+        <button
+          disabled={siteMut.isPending || siteWatched >= siteLimit}
+          onClick={viewSite}
+          className="mt-4 w-full rounded-2xl bg-gradient-flame py-3.5 text-sm font-bold text-primary-foreground shadow-flame disabled:opacity-40"
+        >
+          {siteMut.isPending
+            ? "Verifying…"
+            : siteWatched >= siteLimit
+              ? "Daily limit reached"
+              : "Open Site"}
+        </button>
+
+        <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <Timer className="h-3 w-3" /> Min stay {siteMinWatch}s
+          </span>
+          <span>
+            {siteWatched} / {siteLimit} today
+          </span>
+        </div>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-secondary/40">
+          <div
+            className="h-full bg-gradient-flame"
+            style={{ width: `${Math.min(100, (siteWatched / siteLimit) * 100)}%` }}
+          />
+        </div>
+      </div>
+
+
       <div>
         <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Today&apos;s Ads
@@ -182,7 +227,7 @@ function EarnPage() {
                   minute: "2-digit",
                 })}
                 <span className="rounded-full bg-secondary/50 px-2 py-0.5 text-[10px]">
-                  {a.provider === "adsgram_int" ? "Int" : "Reward"}
+                  {a.provider === "adsgram_int" ? "Int" : a.provider === "viewsite" ? "Site" : "Reward"}
                 </span>
               </span>
               <span className="font-bold text-gradient-gold">+{formatFlames(a.reward)}</span>
