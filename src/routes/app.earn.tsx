@@ -107,24 +107,23 @@ function EarnPage() {
         ? normalizeRewardBlockId(cfg?.block_id_reward)
         : normalizeInterstitialBlockId(cfg?.block_id_interstitial);
 
+    if (!blockId) {
+      toast.error("No ad available right now — try again");
+      return;
+    }
     let seconds = minWatch;
-    if (blockId) {
-      try {
-        toast.loading("Loading ad…", { id: "ad" });
-        const res = await showAdTimed(blockId, minWatch);
-        seconds = res.seconds;
-        toast.dismiss("ad");
-      } catch (e) {
-        toast.dismiss("ad");
-        toast.error(e instanceof Error ? e.message : "Ad failed to load");
-        return;
-      }
-    } else {
+    try {
       toast.loading("Loading ad…", { id: "ad" });
-      await new Promise((r) => setTimeout(r, minWatch * 1000));
+      const res = await showAdTimed(blockId, minWatch);
+      seconds = res.seconds;
       toast.dismiss("ad");
+    } catch (e) {
+      toast.dismiss("ad");
+      toast.error(e instanceof Error ? e.message : "No ad available — try again");
+      return;
     }
     claimMut.mutate({ blockId, kind, watchedSeconds: seconds });
+
   }
 
   return (
