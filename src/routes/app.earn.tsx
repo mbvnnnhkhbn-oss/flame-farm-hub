@@ -227,7 +227,7 @@ function EarnPage() {
                   minute: "2-digit",
                 })}
                 <span className="rounded-full bg-secondary/50 px-2 py-0.5 text-[10px]">
-                  {a.provider === "adsgram_int" ? "Int" : "Reward"}
+                  {a.provider === "adsgram_int" ? "Int" : a.provider === "viewsite" ? "Site" : "Reward"}
                 </span>
               </span>
               <span className="font-bold text-gradient-gold">+{formatFlames(a.reward)}</span>
