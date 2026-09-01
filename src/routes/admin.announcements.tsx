@@ -176,6 +176,127 @@ function AdminAnnouncements() {
           </div>
         )}
       </div>
+
+      <BroadcastPanel />
     </div>
   );
 }
+
+function BroadcastPanel() {
+  const sendFn = useServerFn(broadcastToUsers);
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [buttons, setButtons] = useState<{ text: string; url: string }[]>([]);
+  const [alsoInApp, setAlsoInApp] = useState(true);
+
+  const sendMut = useMutation({
+    mutationFn: () =>
+      sendFn({
+        data: {
+          title,
+          body,
+          imageUrl: imageUrl.trim() ? imageUrl.trim() : null,
+          buttons: buttons.filter((b) => b.text.trim() && b.url.trim()),
+          alsoInApp,
+        },
+      }),
+    onSuccess: (r) => {
+      toast.success(`Broadcast sent to ${r.sent} users`);
+      setTitle("");
+      setBody("");
+      setImageUrl("");
+      setButtons([]);
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  return (
+    <div className="rounded-2xl border border-accent/30 bg-card/60 p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <Send className="h-4 w-4 text-accent" />
+        <h2 className="text-sm font-black">Broadcast to all users</h2>
+      </div>
+      <div className="space-y-3">
+        <input
+          placeholder="Title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm font-semibold"
+        />
+        <textarea
+          rows={3}
+          placeholder="Message body (HTML allowed)"
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          className="w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm"
+        />
+        <input
+          placeholder="Image URL (optional)"
+          value={imageUrl}
+          onChange={(e) => setImageUrl(e.target.value)}
+          className="w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm"
+        />
+
+        <div className="space-y-2">
+          {buttons.map((b, i) => (
+            <div key={i} className="grid grid-cols-2 gap-2">
+              <input
+                placeholder="Button text"
+                value={b.text}
+                onChange={(e) =>
+                  setButtons(buttons.map((x, j) => (j === i ? { ...x, text: e.target.value } : x)))
+                }
+                className="rounded-lg border border-border/60 bg-background px-3 py-2 text-xs"
+              />
+              <div className="flex gap-1">
+                <input
+                  placeholder="https://…"
+                  value={b.url}
+                  onChange={(e) =>
+                    setButtons(buttons.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)))
+                  }
+                  className="w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-xs"
+                />
+                <button
+                  onClick={() => setButtons(buttons.filter((_, j) => j !== i))}
+                  className="rounded-lg border border-destructive/40 px-2 text-destructive"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+          {buttons.length < 3 && (
+            <button
+              onClick={() => setButtons([...buttons, { text: "", url: "" }])}
+              className="inline-flex items-center gap-1 rounded-full border border-border/60 px-3 py-1.5 text-[11px]"
+            >
+              <Plus className="h-3 w-3" /> Add button
+            </button>
+          )}
+        </div>
+
+        <label className="inline-flex items-center gap-1.5 text-xs">
+          <input
+            type="checkbox"
+            checked={alsoInApp}
+            onChange={(e) => setAlsoInApp(e.target.checked)}
+          />
+          Also show as in-app notification
+        </label>
+
+        <div className="flex justify-end">
+          <button
+            disabled={sendMut.isPending || !title.trim() || !body.trim()}
+            onClick={() => sendMut.mutate()}
+            className="rounded-full bg-gradient-flame px-5 py-2 text-xs font-bold text-primary-foreground shadow-flame disabled:opacity-50"
+          >
+            {sendMut.isPending ? "Sending…" : "Send broadcast"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
