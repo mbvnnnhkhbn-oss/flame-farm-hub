@@ -164,6 +164,52 @@ function EarnPage() {
         onWatch={() => watchAd("interstitial")}
       />
 
+      <div className="rounded-3xl bg-gradient-card border border-accent/25 p-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-secondary/50">
+            <Globe className="h-7 w-7 text-accent" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-base font-black">View Site</div>
+            <div className="text-[11px] text-muted-foreground">
+              Open a sponsored site for {siteMinWatch}s
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-xl font-black text-gradient-gold">+{formatFlames(siteValue)}</div>
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">per view</div>
+          </div>
+        </div>
+
+        <button
+          disabled={siteMut.isPending || siteWatched >= siteLimit}
+          onClick={viewSite}
+          className="mt-4 w-full rounded-2xl bg-gradient-flame py-3.5 text-sm font-bold text-primary-foreground shadow-flame disabled:opacity-40"
+        >
+          {siteMut.isPending
+            ? "Verifying…"
+            : siteWatched >= siteLimit
+              ? "Daily limit reached"
+              : "Open Site"}
+        </button>
+
+        <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <Timer className="h-3 w-3" /> Min stay {siteMinWatch}s
+          </span>
+          <span>
+            {siteWatched} / {siteLimit} today
+          </span>
+        </div>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-secondary/40">
+          <div
+            className="h-full bg-gradient-flame"
+            style={{ width: `${Math.min(100, (siteWatched / siteLimit) * 100)}%` }}
+          />
+        </div>
+      </div>
+
+
       <div>
         <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Today&apos;s Ads
