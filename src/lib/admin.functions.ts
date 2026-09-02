@@ -248,13 +248,20 @@ export const decideWithdrawal = createServerFn({ method: "POST" })
         }`,
       });
       if (prof?.telegram_id) {
+        const { appKeyboard } = await import("@/lib/welcome");
         await sendTelegramMessage(
           prof.telegram_id,
-          `❌ <b>Withdrawal Rejected</b>\nAmount: ${wd.amount_usdt} USDT — Flames refunded.${
-            data.admin_note ? `\nReason: ${data.admin_note}` : ""
-          }`,
+          `❌ <b>Withdrawal Rejected</b>\n` +
+            `━━━━━━━━━━━━━━━\n` +
+            `💰 <b>Amount:</b> $${wd.amount_usdt} USDT\n` +
+            `🔥 <b>Refunded:</b> ${Number(wd.amount_flames).toLocaleString()} Flames\n` +
+            (data.admin_note ? `📝 <b>Reason:</b> ${data.admin_note}\n` : "") +
+            `━━━━━━━━━━━━━━━\n` +
+            `ℹ️ Your Flames are back in your balance. Please check the withdrawal requirements and try again.`,
+          { reply_markup: appKeyboard() },
         );
       }
+
     }
     return { ok: true };
   });
