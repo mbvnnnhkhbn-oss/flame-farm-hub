@@ -32,3 +32,62 @@ export function welcomeKeyboard() {
     ],
   };
 }
+
+export const MINI_APP_URL = "https://t.me/Coinflamesbot/coinflames";
+export const COMMUNITY_URL = "https://t.me/CoinFlames";
+export const PAYMENTS_URL = "https://t.me/coinflamespayment";
+
+/** Standard inline keyboard for system notifications. */
+export function appKeyboard(extra?: { text: string; url: string }) {
+  const rows: { text: string; url: string }[][] = [];
+  if (extra) rows.push([extra]);
+  rows.push([{ text: "🚀 Open Mini App", url: MINI_APP_URL }]);
+  rows.push([
+    { text: "💬 Community", url: COMMUNITY_URL },
+    { text: "💸 Payments", url: PAYMENTS_URL },
+  ]);
+  return { inline_keyboard: rows };
+}
+
+/** Rotating reminder messages sent a few times a day. */
+export const REMINDER_MESSAGES: { title: string; body: string }[] = [
+  {
+    title: "⛏ Your mining machine is idle!",
+    body:
+      "Flames don't mine themselves 😄\n\n" +
+      "• Claim your hourly mining reward\n" +
+      "• Up to <b>10 claims per machine</b> each day\n\n" +
+      "Tap below and grab your Flames 🔥",
+  },
+  {
+    title: "👀 Daily ads are waiting",
+    body:
+      "You still have ads left today!\n\n" +
+      "• 🎥 AdsGram Reward — <b>5 Flames</b> each\n" +
+      "• 🎬 AdsGram Int — <b>5 Flames</b> each\n" +
+      "• 🌐 View Site — <b>3 Flames</b> each\n\n" +
+      "A few minutes = more USDT 💵",
+  },
+  {
+    title: "🎁 Don't lose your check-in streak",
+    body:
+      "Daily check-in resets at <b>00:00 UTC</b>.\n\n" +
+      "Longer streak = bigger bonus 🔥\nOpen the app and claim it now.",
+  },
+  {
+    title: "🤝 Invite friends, earn forever",
+    body:
+      "Every friend pays you:\n\n" +
+      "• <b>25 Flames</b> on join\n" +
+      "• <b>50 Flames</b> Day 1\n" +
+      "• <b>75 Flames</b> Day 2\n" +
+      "• <b>5% lifetime commission</b> 💰\n\n" +
+      "Share your invite link today!",
+  },
+  {
+    title: "💸 Cash out from just $0.1",
+    body:
+      "Minimum withdraw is only <b>$0.1 USDT</b> (BEP20).\n\n" +
+      "🧾 Every payout is posted publicly in our Payments channel — proof for everyone.",
+  },
+];

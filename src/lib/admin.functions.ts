@@ -183,33 +183,47 @@ export const decideWithdrawal = createServerFn({ method: "POST" })
         .select("telegram_id,username,first_name")
         .eq("id", wd.user_id)
         .maybeSingle();
+      const { appKeyboard } = await import("@/lib/welcome");
+      const gross = Number(wd.amount_usdt);
+      const feeV = Number(wd.fee_usdt ?? 0);
+      const paid = Number(wd.net_usdt ?? wd.amount_usdt);
+      const when = new Date().toUTCString().replace("GMT", "UTC");
       if (prof?.telegram_id) {
         await sendTelegramMessage(
           prof.telegram_id,
-          `✅ <b>Withdrawal Approved</b>\nGross: ${wd.amount_usdt} USDT\nFee: ${wd.fee_usdt ?? 0} USDT\nPaid: <b>${wd.net_usdt ?? wd.amount_usdt} USDT</b>\nTx: <code>${txHash}</code>`,
-          {
-            reply_markup: {
-              inline_keyboard: [[
-                { text: "View Transaction", url: txUrl },
-                { text: "Open Mini App", url: miniAppUrl },
-              ]],
-            },
-          },
+          `✅ <b>Withdrawal Approved — Payment Sent!</b>\n` +
+            `━━━━━━━━━━━━━━━\n` +
+            `💰 <b>Requested:</b> $${gross} USDT\n` +
+            `🧾 <b>Fee:</b> $${feeV} USDT\n` +
+            `💵 <b>You received:</b> <b>$${paid} USDT</b>\n` +
+            `🔥 <b>Flames used:</b> ${Number(wd.amount_flames).toLocaleString()}\n` +
+            `🌐 <b>Network:</b> BEP20 (BSC)\n` +
+            `👛 <b>Wallet:</b> <code>${wd.wallet_address}</code>\n` +
+            `🔗 <b>Tx:</b> <code>${txHash}</code>\n` +
+            `━━━━━━━━━━━━━━━\n` +
+            `🎉 Thank you for using <b>CoinFlames</b>! Keep earning and withdraw again 🔥`,
+          { reply_markup: appKeyboard({ text: "🔍 View Transaction", url: txUrl }) },
         );
       }
       const userLabel = prof?.username ? `@${prof.username}` : prof?.first_name ?? "CoinFlames user";
       await postToConfiguredChannel(
         "payment_channel_chat_id",
-        `💸 <b>Payment Sent</b>\nUser: ${userLabel}\nPaid: <b>${wd.net_usdt ?? wd.amount_usdt} USDT</b>\nNetwork: BEP20\nWallet: <code>${wd.wallet_address}</code>\nTx: <code>${txHash}</code>`,
-        {
-          reply_markup: {
-            inline_keyboard: [[
-              { text: "View Transaction", url: txUrl },
-              { text: "Open Mini App", url: miniAppUrl },
-            ]],
-          },
-        },
+        `💸 <b>PAYMENT PROOF</b> 💸\n` +
+          `━━━━━━━━━━━━━━━\n` +
+          `👤 <b>User:</b> ${userLabel}\n` +
+          `💵 <b>Paid:</b> <b>$${paid} USDT</b>\n` +
+          `🧾 <b>Fee:</b> $${feeV} USDT\n` +
+          `🔥 <b>Flames:</b> ${Number(wd.amount_flames).toLocaleString()}\n` +
+          `🌐 <b>Network:</b> BEP20 (BSC)\n` +
+          `👛 <b>Wallet:</b> <code>${wd.wallet_address}</code>\n` +
+          `🔗 <b>Tx Hash:</b> <code>${txHash}</code>\n` +
+          `🕒 <b>Paid at:</b> ${when}\n` +
+          `━━━━━━━━━━━━━━━\n` +
+          `✅ <i>Payment completed successfully</i>\n` +
+          `💎 Minimum withdraw only <b>$0.1</b> — start earning with CoinFlames 🔥`,
+        { reply_markup: appKeyboard({ text: "🔍 View Transaction", url: txUrl }) },
       );
+
     } else {
       // Refund flames on rejection
       const { data: prof } = await supabaseAdmin
@@ -234,13 +248,20 @@ export const decideWithdrawal = createServerFn({ method: "POST" })
         }`,
       });
       if (prof?.telegram_id) {
+        const { appKeyboard } = await import("@/lib/welcome");
         await sendTelegramMessage(
           prof.telegram_id,
-          `❌ <b>Withdrawal Rejected</b>\nAmount: ${wd.amount_usdt} USDT — Flames refunded.${
-            data.admin_note ? `\nReason: ${data.admin_note}` : ""
-          }`,
+          `❌ <b>Withdrawal Rejected</b>\n` +
+            `━━━━━━━━━━━━━━━\n` +
+            `💰 <b>Amount:</b> $${wd.amount_usdt} USDT\n` +
+            `🔥 <b>Refunded:</b> ${Number(wd.amount_flames).toLocaleString()} Flames\n` +
+            (data.admin_note ? `📝 <b>Reason:</b> ${data.admin_note}\n` : "") +
+            `━━━━━━━━━━━━━━━\n` +
+            `ℹ️ Your Flames are back in your balance. Please check the withdrawal requirements and try again.`,
+          { reply_markup: appKeyboard() },
         );
       }
+
     }
     return { ok: true };
   });
@@ -456,18 +477,30 @@ export const setUserSuspend = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
 
     const { sendUserBotMessage, notifyAdmin } = await import("@/lib/telegram-bot.server");
+    const { appKeyboard, COMMUNITY_URL } = await import("@/lib/welcome");
     if (data.suspended) {
       await sendUserBotMessage(
         data.userId,
-        `⛔ <b>Your account has been suspended</b>${data.reason ? `\nReason: ${data.reason}` : ""}\n\nContact support if you think this is a mistake.`,
+        `⛔ <b>Account Suspended</b>\n` +
+          `━━━━━━━━━━━━━━━\n` +
+          (data.reason ? `📝 <b>Reason:</b> ${data.reason}\n` : "") +
+          `🚫 Earning and withdrawals are paused for now.\n` +
+          `━━━━━━━━━━━━━━━\n` +
+          `💬 Think this is a mistake? Contact us in the community group.`,
+        { reply_markup: { inline_keyboard: [[{ text: "💬 Contact Support", url: COMMUNITY_URL }]] } },
       );
       await notifyAdmin(`⛔ <b>Account suspended</b>\nUser id: <code>${data.userId}</code>${data.reason ? `\nReason: ${data.reason}` : ""}`);
     } else {
       await sendUserBotMessage(
         data.userId,
-        "✅ <b>Your account has been restored</b>\nYou can keep earning again — open the app.",
+        `✅ <b>Account Restored</b>\n` +
+          `━━━━━━━━━━━━━━━\n` +
+          `🎉 Welcome back! Your account is active again.\n` +
+          `🔥 Claim mining, watch ads and keep earning.`,
+        { reply_markup: appKeyboard() },
       );
     }
+
     return { ok: true };
   });
 
