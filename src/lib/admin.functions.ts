@@ -477,18 +477,30 @@ export const setUserSuspend = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
 
     const { sendUserBotMessage, notifyAdmin } = await import("@/lib/telegram-bot.server");
+    const { appKeyboard, COMMUNITY_URL } = await import("@/lib/welcome");
     if (data.suspended) {
       await sendUserBotMessage(
         data.userId,
-        `⛔ <b>Your account has been suspended</b>${data.reason ? `\nReason: ${data.reason}` : ""}\n\nContact support if you think this is a mistake.`,
+        `⛔ <b>Account Suspended</b>\n` +
+          `━━━━━━━━━━━━━━━\n` +
+          (data.reason ? `📝 <b>Reason:</b> ${data.reason}\n` : "") +
+          `🚫 Earning and withdrawals are paused for now.\n` +
+          `━━━━━━━━━━━━━━━\n` +
+          `💬 Think this is a mistake? Contact us in the community group.`,
+        { reply_markup: { inline_keyboard: [[{ text: "💬 Contact Support", url: COMMUNITY_URL }]] } },
       );
       await notifyAdmin(`⛔ <b>Account suspended</b>\nUser id: <code>${data.userId}</code>${data.reason ? `\nReason: ${data.reason}` : ""}`);
     } else {
       await sendUserBotMessage(
         data.userId,
-        "✅ <b>Your account has been restored</b>\nYou can keep earning again — open the app.",
+        `✅ <b>Account Restored</b>\n` +
+          `━━━━━━━━━━━━━━━\n` +
+          `🎉 Welcome back! Your account is active again.\n` +
+          `🔥 Claim mining, watch ads and keep earning.`,
+        { reply_markup: appKeyboard() },
       );
     }
+
     return { ok: true };
   });
 
