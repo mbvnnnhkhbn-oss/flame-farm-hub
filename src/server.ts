@@ -44,8 +44,51 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+// Frontend-only hosting (e.g. Vercel): when BACKEND_ORIGIN is set, all backend
+// traffic (server functions + api routes) is forwarded to the Lovable-hosted
+// deployment, which already holds the Supabase service role key. This lets the
+// app run on another host without ever configuring SUPABASE_SERVICE_ROLE_KEY.
+function backendOrigin(): string | null {
+  const raw = process.env.BACKEND_ORIGIN ?? process.env.VITE_BACKEND_ORIGIN;
+  if (!raw) return null;
+  return raw.replace(/\/+$/, "");
+}
+
+function isBackendPath(pathname: string): boolean {
+  return pathname.startsWith("/_serverFn/") || pathname.startsWith("/api/");
+}
+
+async function proxyToBackend(request: Request, origin: string): Promise<Response> {
+  const url = new URL(request.url);
+  const target = `${origin}${url.pathname}${url.search}`;
+
+  const headers = new Headers(request.headers);
+  headers.delete("host");
+  headers.delete("connection");
+  headers.delete("content-length");
+  headers.delete("accept-encoding");
+
+  const init: RequestInit = { method: request.method, headers, redirect: "manual" };
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    init.body = await request.arrayBuffer();
+  }
+
+  const upstream = await fetch(target, init);
+  const responseHeaders = new Headers(upstream.headers);
+  responseHeaders.delete("content-encoding");
+  responseHeaders.delete("content-length");
+  responseHeaders.delete("transfer-encoding");
+
+  return new Response(upstream.body, {
+    status: upstream.status,
+    statusText: upstream.statusText,
+    headers: responseHeaders,
+  });
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
+
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
