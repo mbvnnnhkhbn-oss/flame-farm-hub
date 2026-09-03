@@ -88,8 +88,24 @@ async function proxyToBackend(request: Request, origin: string): Promise<Respons
 
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
+    const origin = backendOrigin();
+    if (origin) {
+      const { pathname } = new URL(request.url);
+      if (isBackendPath(pathname)) {
+        try {
+          return await proxyToBackend(request, origin);
+        } catch (error) {
+          console.error("[backend-proxy]", error);
+          return new Response(JSON.stringify({ error: "Backend unreachable" }), {
+            status: 502,
+            headers: { "content-type": "application/json" },
+          });
+        }
+      }
+    }
 
     try {
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
