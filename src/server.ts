@@ -48,14 +48,29 @@ function isH3SwallowedErrorBody(body: string): boolean {
 // traffic (server functions + api routes) is forwarded to the Lovable-hosted
 // deployment, which already holds the Supabase service role key. This lets the
 // app run on another host without ever configuring SUPABASE_SERVICE_ROLE_KEY.
-function backendOrigin(): string | null {
+const DEFAULT_BACKEND_ORIGIN =
+  "https://project--2291c52f-fef9-4847-9d1e-2ade542b1d1d.lovable.app";
+
+function backendOrigin(request: Request): string | null {
   const raw = process.env.BACKEND_ORIGIN ?? process.env.VITE_BACKEND_ORIGIN;
-  if (!raw) return null;
-  return raw.replace(/\/+$/, "");
+  const origin = (raw || DEFAULT_BACKEND_ORIGIN).replace(/\/+$/, "");
+  const requestHost = new URL(request.url).hostname;
+
+  // Lovable already has the required private credentials and must execute its
+  // own handlers locally. Only external frontend hosts need the proxy.
+  if (
+    requestHost.endsWith(".lovable.app") ||
+    requestHost.endsWith(".lovableproject.com") ||
+    requestHost.endsWith(".lovable.cloud")
+  ) {
+    return null;
+  }
+
+  return origin;
 }
 
 function isBackendPath(pathname: string): boolean {
-  return pathname.startsWith("/_serverFn/") || pathname.startsWith("/api/");
+  return pathname === "/_serverFn" || pathname.startsWith("/_serverFn/") || pathname.startsWith("/api/");
 }
 
 async function proxyToBackend(request: Request, origin: string): Promise<Response> {
@@ -88,7 +103,7 @@ async function proxyToBackend(request: Request, origin: string): Promise<Respons
 
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
-    const origin = backendOrigin();
+    const origin = backendOrigin(request);
     if (origin) {
       const { pathname } = new URL(request.url);
       if (isBackendPath(pathname)) {
