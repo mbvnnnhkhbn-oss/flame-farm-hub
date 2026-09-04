@@ -2,7 +2,7 @@
 
 **Frontend = Vercel · Backend = Lovable · Database = Lovable Cloud**
 
-මේ setup එකෙන් `SUPABASE_SERVICE_ROLE_KEY` එකක් **අවශ්‍ය නෑ**. හේතුව: Vercel එකේ එන සියලුම backend requests (`/_serverFn/*` සහ `/api/*`) automatically Lovable backend එකට proxy වෙනවා — key එක දැනටමත් එහි inject වෙලා තියෙනවා.
+මේ setup එකෙන් `SUPABASE_SERVICE_ROLE_KEY` එකක් **අවශ්‍ය නෑ**. හේතුව: Vercel එකේ එන සියලුම backend requests (`/_serverFn/*` සහ `/api/*`) automatically Lovable backend එකට proxy වෙනවා — key එක දැනටමත් එහි inject වෙලා තියෙනවා. `BACKEND_ORIGIN` නොදැම්මත් stable Lovable backend URL එක fallback එක ලෙස භාවිත වෙනවා.
 
 ```
 Telegram Mini App
@@ -38,6 +38,7 @@ Lovable එකේ ➕ menu → **GitHub** → **Connect project** → **Create R
 4. **Environment Variables**:
 
 ```
+# Optional override (normally not required)
 BACKEND_ORIGIN=https://project--2291c52f-fef9-4847-9d1e-2ade542b1d1d.lovable.app
 
 VITE_SUPABASE_URL=https://c--2291c52f-fef9-4847-9d1e-2ade542b1d1d-prod.lovable.cloud
@@ -49,7 +50,7 @@ SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 SUPABASE_PROJECT_ID=rabldjzghoxfmfkzplhi
 ```
 
-> `SUPABASE_SERVICE_ROLE_KEY` සහ `TELEGRAM_BOT_TOKEN` **Vercel එකට දාන්න අවශ්‍ය නෑ** — ඒවා Lovable backend එකේ තියෙනවා.
+> `SUPABASE_SERVICE_ROLE_KEY` සහ `TELEGRAM_BOT_TOKEN` **Vercel එකට දාන්න අවශ්‍ය නෑ** — ඒවා Lovable backend එකේ තියෙනවා. `BACKEND_ORIGIN` එකත් optional.
 
 5. **Deploy** ↵
 
@@ -69,7 +70,7 @@ https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook?url=https://project-
 
 - [ ] Lovable එකේ publish වෙලා (backend live)
 - [ ] Vercel deploy successful
-- [ ] Vercel එකේ `BACKEND_ORIGIN` set වෙලා
+- [ ] Optional `BACKEND_ORIGIN` override එක අවශ්‍ය නම් පමණක් set වෙලා
 - [ ] Mini app open කරාම "Sign-in failed" එන්නේ නෑ
 - [ ] Telegram `/start` welcome message එනවා
 - [ ] Admin panel (`/admin`) admin user ට පෙන්නනවා
@@ -78,7 +79,7 @@ https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook?url=https://project-
 
 | Issue | Fix |
 |-------|-----|
-| `Missing Supabase environment variable(s): SUPABASE_SERVICE_ROLE_KEY` | Vercel එකේ `BACKEND_ORIGIN` set කරලා redeploy කරන්න |
+| `Missing Supabase environment variable(s): SUPABASE_SERVICE_ROLE_KEY` | අලුත්ම code එක GitHub/Vercel වෙත deploy වී ඇතිද බලලා redeploy කරන්න; `BACKEND_ORIGIN` optional override එකත් දාන්න පුළුවන් |
 | `Backend unreachable` (502) | Lovable app එක publish වෙලාද, `BACKEND_ORIGIN` URL එක හරිද බලන්න |
 | Bot response නෑ | Webhook URL එක Lovable backend එකට point වෙනවාද `getWebhookInfo` එකෙන් බලන්න |
 | Admin panel නෑ | `user_roles` table එකේ `admin` role එක add කරන්න |
