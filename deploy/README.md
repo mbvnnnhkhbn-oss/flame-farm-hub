@@ -21,7 +21,7 @@ Vercel (UI + SSR)  ──proxy──►  Lovable backend (server functions, admi
 මුලින්ම **Publish** button එකෙන් app එක publish කරන්න. ඒකෙන් backend එක live වෙනවා:
 
 ```
-https://project--2291c52f-fef9-4847-9d1e-2ade542b1d1d.lovable.app
+https://flame-farm-hub.lovable.app
 ```
 
 (මේක rename වුනත් වෙනස් වෙන්නේ නෑ — stable URL එකක්.)
@@ -39,7 +39,7 @@ Lovable එකේ ➕ menu → **GitHub** → **Connect project** → **Create R
 
 ```
 # Optional override (normally not required)
-BACKEND_ORIGIN=https://project--2291c52f-fef9-4847-9d1e-2ade542b1d1d.lovable.app
+BACKEND_ORIGIN=https://flame-farm-hub.lovable.app
 
 VITE_SUPABASE_URL=https://c--2291c52f-fef9-4847-9d1e-2ade542b1d1d-prod.lovable.cloud
 VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJhYmxkanpnaG94Zm1ma3pwbGhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwOTUyNzksImV4cCI6MjA5ODY3MTI3OX0.U2_3vbFJXOsDHW2DzPR2E3RdZcehwnmDletrHmGLNBA
@@ -59,7 +59,7 @@ SUPABASE_PROJECT_ID=rabldjzghoxfmfkzplhi
 - **Webhook** එක Lovable backend එකට තියෙන්න ඕනේ (Vercel එකට නෙවෙයි):
 
 ```
-https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook?url=https://project--2291c52f-fef9-4847-9d1e-2ade542b1d1d.lovable.app/api/public/telegram/webhook
+https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook?url=https://flame-farm-hub.lovable.app/api/public/telegram/webhook
 ```
 
 - **Mini App URL** එක BotFather → `/setmenubutton` එකට ඔයාගේ Vercel URL එක දාන්න (හෝ custom domain එක).
