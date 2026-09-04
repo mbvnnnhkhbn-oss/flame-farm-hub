@@ -48,8 +48,7 @@ function isH3SwallowedErrorBody(body: string): boolean {
 // traffic (server functions + api routes) is forwarded to the Lovable-hosted
 // deployment, which already holds the Supabase service role key. This lets the
 // app run on another host without ever configuring SUPABASE_SERVICE_ROLE_KEY.
-const DEFAULT_BACKEND_ORIGIN =
-  "https://project--2291c52f-fef9-4847-9d1e-2ade542b1d1d.lovable.app";
+const DEFAULT_BACKEND_ORIGIN = "https://flame-farm-hub.lovable.app";
 
 function backendOrigin(request: Request): string | null {
   const raw = process.env.BACKEND_ORIGIN ?? process.env.VITE_BACKEND_ORIGIN;
